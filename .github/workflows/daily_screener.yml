@@ -1,0 +1,30 @@
+name: Daily US Swing Screener
+
+on:
+  schedule:
+    # 22:00 UTC = 18:00 EDT / 17:00 EST — sekitar 1-2 jam setelah market close (16:00 ET)
+    # Catatan: cron GitHub tidak auto-adjust DST, jadi run bisa lebih cepat/lambat
+    # 1 jam tergantung musim. Kalau perlu presisi lebih ketat, boleh dipisah jadi
+    # 2 schedule (EST & EDT) nanti — tidak perlu sekarang.
+    - cron: "0 22 * * 1-5"
+  workflow_dispatch: {}   # supaya bisa trigger manual dari tab Actions kalau perlu
+
+jobs:
+  run-screener:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run screener
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python main.py
