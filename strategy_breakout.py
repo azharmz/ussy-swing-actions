@@ -2,11 +2,12 @@
 Strategy: breakout. Baca feature abstraction (dict dari feature_engine),
 tidak menghitung indikator mentah sendiri.
 
-Batasan tier dari hasil backtest 3 tahun (197 ticker):
-score >=80 -> excess return konsisten positif di semua horizon (5/10/20d)
-score 40-79 -> tidak reliably beda dari baseline
+Batasan tier dari backtest signal-lifecycle breakdown per score (197 ticker, 3 tahun):
+score=100 (semua 4 syarat) -> WR 59.8%, PF 1.85, median pnl +2.43%
+score 80-85 (3 dari 4 syarat) -> median pnl NEGATIF meski PF agregat >1 (ketutup
+rata-rata, bukan median) -> diturunkan ke watchlist, bukan actionable.
 """
-TIER_ACTIONABLE = 80
+TIER_ACTIONABLE = 100
 TIER_WATCHLIST = 40
 
 

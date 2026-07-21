@@ -2,6 +2,7 @@ from fetch import fetch_prices
 from feature_engine import compute_features
 from strategy_breakout import run_breakout
 from database import get_client, push_features, push_strategy_results
+from signal_engine import process_signals
 
 # Universe halal x XTB (197 ticker, sektor financial sudah di-exclude manual)
 UNIVERSE = [
@@ -61,6 +62,8 @@ def main():
     push_strategy_results(supabase, strategy_rows)
 
     print("Selesai push ke Supabase")
+
+    process_signals(supabase, price_data, strategy_rows)
 
     kuat = [r for r in strategy_rows if r["decision"]["tier"] == "kuat"]
     watchlist = [r for r in strategy_rows if r["decision"]["tier"] == "watchlist"]
