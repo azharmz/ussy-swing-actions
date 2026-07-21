@@ -2,3 +2,4 @@ yfinance
 supabase
 pandas
 pandas-ta
+requests
