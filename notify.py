@@ -34,12 +34,19 @@ def format_new_signals_message(new_signals):
     if not new_signals:
         return None
 
-    lines = [f"*Sinyal Breakout Baru — {len(new_signals)} ticker (score=100)*", ""]
+    by_strategy = {}
     for s in new_signals:
-        lines.append(
-            f"*{s['ticker']}*\n"
-            f"Entry: `{s['entry_price']}`  SL: `{s['stop_loss']}`  TP: `{s['take_profit']}`"
-        )
-    lines.append("")
+        by_strategy.setdefault(s["strategy"], []).append(s)
+
+    lines = [f"*Sinyal Baru — {len(new_signals)} ticker (score=100)*", ""]
+    for strategy, sigs in by_strategy.items():
+        lines.append(f"_Strategi: {strategy.upper()}_")
+        for s in sigs:
+            lines.append(
+                f"*{s['ticker']}*\n"
+                f"Entry: `{s['entry_price']}`  SL: `{s['stop_loss']}`  TP: `{s['take_profit']}`"
+            )
+        lines.append("")
+
     lines.append("_Bukan rekomendasi finansial. Detail: uswing.anyapp.my.id_")
     return "\n".join(lines)

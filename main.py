@@ -1,6 +1,7 @@
 from fetch import fetch_prices
 from feature_engine import compute_features
 from strategy_breakout import run_breakout
+from strategy_pullback import run_pullback
 from database import get_client, push_features, push_strategy_results
 from signal_engine import process_signals
 from notify import send_telegram_message, format_new_signals_message
@@ -56,6 +57,7 @@ def main():
             continue
         feature_rows.append(feat)
         strategy_rows.append(run_breakout(feat))
+        strategy_rows.append(run_pullback(feat))
 
     print(f"Berhasil proses {len(feature_rows)}/{len(UNIVERSE)} ticker")
 
@@ -70,9 +72,10 @@ def main():
     if msg:
         send_telegram_message(msg)
 
-    kuat = [r for r in strategy_rows if r["decision"]["tier"] == "kuat"]
-    watchlist = [r for r in strategy_rows if r["decision"]["tier"] == "watchlist"]
-    print(f"Kuat: {len(kuat)} | Watchlist: {len(watchlist)}")
+    for strategy_name in ("breakout", "pullback"):
+        rows_s = [r for r in strategy_rows if r["strategy"] == strategy_name]
+        kuat = [r for r in rows_s if r["decision"]["tier"] == "kuat"]
+        print(f"{strategy_name}: {len(kuat)} sinyal kuat dari {len(rows_s)} ticker")
 
     # Kalau proses jauh lebih sedikit dari universe, kemungkinan ada masalah
     # fetch (rate-limit dsb) — biarkan job gagal biar kelihatan di GitHub Actions,
