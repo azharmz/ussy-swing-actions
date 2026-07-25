@@ -103,7 +103,8 @@ def update_active_signals(supabase, price_data):
                     entry_actual = round(min(float(today["Open"]), sig["entry_price"]), 2)
                 supabase.table("trade_signals").update({
                     "status": "entered", "entry_price_actual": entry_actual,
-                    "entry_date": today_date, "days_in_status": 0
+                    "entry_date": today_date, "days_in_status": 0,
+                    "mark_price": round(float(today["Close"]), 2)
                 }).eq("id", sig["id"]).execute()
             else:
                 new_days = sig["days_in_status"] + 1
@@ -113,7 +114,8 @@ def update_active_signals(supabase, price_data):
                     }).eq("id", sig["id"]).execute()
                 else:
                     supabase.table("trade_signals").update({
-                        "days_in_status": new_days
+                        "days_in_status": new_days,
+                        "mark_price": round(float(today["Close"]), 2)
                     }).eq("id", sig["id"]).execute()
 
         elif sig["status"] == "entered":
@@ -143,7 +145,8 @@ def update_active_signals(supabase, price_data):
                     }).eq("id", sig["id"]).execute()
                 else:
                     supabase.table("trade_signals").update({
-                        "days_in_status": new_days
+                        "days_in_status": new_days,
+                        "mark_price": round(float(today["Close"]), 2)
                     }).eq("id", sig["id"]).execute()
 
     return tickers_with_active
@@ -188,6 +191,7 @@ def generate_new_signals(supabase, price_data, strategy_rows, tickers_with_activ
             "take_profit": take_profit,
             "status": "pending",
             "days_in_status": 0,
+            "mark_price": round(float(df["Close"].iloc[-1]), 2),
         })
 
     if new_rows:
