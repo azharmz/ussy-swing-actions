@@ -21,10 +21,6 @@ bersamaan (dua hipotesis independen). Dijaga dua lapis: dicek di sini
 (tickers_with_active sebagai set of (ticker, strategy)) DAN di-enforce
 keras oleh partial unique index di database
 (trade_signals_one_active_per_ticker, key: ticker+strategy).
-
-mark_price, lowest_price, highest_price di-update tiap hari selama status
-pending/entered -- mark_price buat floating PnL di frontend, lowest/highest
-buat lihat seberapa jauh harga sempat bergerak selama sinyal dipantau.
 """
 import pandas as pd
 
@@ -62,17 +58,6 @@ def _entry_level(df, strategy):
     return None
 
 
-def _updated_low_high(sig, today):
-    """Gabungkan lowest/highest yang sudah tersimpan dengan Low/High hari ini."""
-    today_low = round(float(today["Low"]), 2)
-    today_high = round(float(today["High"]), 2)
-    prev_low = sig.get("lowest_price")
-    prev_high = sig.get("highest_price")
-    new_low = today_low if prev_low is None else min(float(prev_low), today_low)
-    new_high = today_high if prev_high is None else max(float(prev_high), today_high)
-    return new_low, new_high
-
-
 def update_active_signals(supabase, price_data):
     """Proses sinyal pending/entered yang sudah ada, pakai OHLC hari ini.
     Return: set (ticker, strategy) yang di-exclude dari pembuatan sinyal baru hari ini."""
@@ -99,13 +84,10 @@ def update_active_signals(supabase, price_data):
         if today_date == sig["signal_date"]:
             continue  # sinyal baru dibuat hari ini, entry window mulai besok
 
-        new_low, new_high = _updated_low_high(sig, today)
-
         if sig["status"] == "pending":
             if today["Low"] <= sig["stop_loss"]:
                 supabase.table("trade_signals").update({
-                    "status": "missed", "missed_reason": "sl_hit_before_entry",
-                    "lowest_price": new_low, "highest_price": new_high,
+                    "status": "missed", "missed_reason": "sl_hit_before_entry"
                 }).eq("id", sig["id"]).execute()
                 continue
 
@@ -122,21 +104,18 @@ def update_active_signals(supabase, price_data):
                 supabase.table("trade_signals").update({
                     "status": "entered", "entry_price_actual": entry_actual,
                     "entry_date": today_date, "days_in_status": 0,
-                    "mark_price": round(float(today["Close"]), 2),
-                    "lowest_price": new_low, "highest_price": new_high,
+                    "mark_price": round(float(today["Close"]), 2)
                 }).eq("id", sig["id"]).execute()
             else:
                 new_days = sig["days_in_status"] + 1
                 if new_days >= ENTRY_WINDOW_DAYS:
                     supabase.table("trade_signals").update({
-                        "status": "missed", "missed_reason": "expired",
-                        "lowest_price": new_low, "highest_price": new_high,
+                        "status": "missed", "missed_reason": "expired"
                     }).eq("id", sig["id"]).execute()
                 else:
                     supabase.table("trade_signals").update({
                         "days_in_status": new_days,
-                        "mark_price": round(float(today["Close"]), 2),
-                        "lowest_price": new_low, "highest_price": new_high,
+                        "mark_price": round(float(today["Close"]), 2)
                     }).eq("id", sig["id"]).execute()
 
         elif sig["status"] == "entered":
@@ -146,16 +125,14 @@ def update_active_signals(supabase, price_data):
                 pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
                 supabase.table("trade_signals").update({
                     "status": "sl_hit", "exit_price": exit_price,
-                    "exit_date": today_date, "pnl_pct": pnl,
-                    "lowest_price": new_low, "highest_price": new_high,
+                    "exit_date": today_date, "pnl_pct": pnl
                 }).eq("id", sig["id"]).execute()
             elif today["High"] >= sig["take_profit"]:
                 exit_price = sig["take_profit"]
                 pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
                 supabase.table("trade_signals").update({
                     "status": "tp_hit", "exit_price": exit_price,
-                    "exit_date": today_date, "pnl_pct": pnl,
-                    "lowest_price": new_low, "highest_price": new_high,
+                    "exit_date": today_date, "pnl_pct": pnl
                 }).eq("id", sig["id"]).execute()
             else:
                 new_days = sig["days_in_status"] + 1
@@ -164,14 +141,12 @@ def update_active_signals(supabase, price_data):
                     pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
                     supabase.table("trade_signals").update({
                         "status": "closed_timeout", "exit_price": exit_price,
-                        "exit_date": today_date, "pnl_pct": pnl,
-                        "lowest_price": new_low, "highest_price": new_high,
+                        "exit_date": today_date, "pnl_pct": pnl
                     }).eq("id", sig["id"]).execute()
                 else:
                     supabase.table("trade_signals").update({
                         "days_in_status": new_days,
-                        "mark_price": round(float(today["Close"]), 2),
-                        "lowest_price": new_low, "highest_price": new_high,
+                        "mark_price": round(float(today["Close"]), 2)
                     }).eq("id", sig["id"]).execute()
 
     return tickers_with_active
@@ -207,7 +182,6 @@ def generate_new_signals(supabase, price_data, strategy_rows, tickers_with_activ
         risk = entry_price - stop_loss
         take_profit = round(entry_price + RR_RATIO * risk, 2)
 
-        today = df.iloc[-1]
         new_rows.append({
             "ticker": ticker,
             "strategy": strategy,
@@ -217,9 +191,7 @@ def generate_new_signals(supabase, price_data, strategy_rows, tickers_with_activ
             "take_profit": take_profit,
             "status": "pending",
             "days_in_status": 0,
-            "mark_price": round(float(today["Close"]), 2),
-            "lowest_price": round(float(today["Low"]), 2),
-            "highest_price": round(float(today["High"]), 2),
+            "mark_price": round(float(df["Close"].iloc[-1]), 2),
         })
 
     if new_rows:
