@@ -49,6 +49,19 @@ def main():
     feature_rows = []
     strategy_rows = []
 
+    # SPY sendiri ikut disimpan sebagai baris daily_features (ticker="SPY"),
+    # pakai compute_features() yang sama persis dengan ticker universe --
+    # cuma dipakai buat benchmark chart "vs SPY" di frontend (paper trading),
+    # BUKAN bagian dari screening/strategi manapun. relative_strength_spy
+    # hasilnya 0 (dibanding diri sendiri) -- nggak masalah, kolom itu nggak
+    # dipakai untuk baris SPY ini.
+    spy_feat = compute_features("SPY", spy_df, spy_df)
+    if spy_feat is not None:
+        feature_rows.append(spy_feat)
+    else:
+        print("WARNING: SPY gagal dihitung fiturnya (data <200 hari?), "
+              "benchmark chart di frontend nggak akan ke-update hari ini.")
+
     for ticker in UNIVERSE:
         if ticker not in price_data:
             continue
@@ -59,7 +72,7 @@ def main():
         strategy_rows.append(run_breakout(feat))
         strategy_rows.append(run_pullback(feat))
 
-    print(f"Berhasil proses {len(feature_rows)}/{len(UNIVERSE)} ticker")
+    print(f"Berhasil proses {len(feature_rows)}/{len(UNIVERSE) + 1} ticker (termasuk SPY)")
 
     push_features(supabase, feature_rows)
     push_strategy_results(supabase, strategy_rows)
