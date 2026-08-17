@@ -1,0 +1,200 @@
+Ticker,Sector,Industry
+TSLA,Consumer Discretionary,Automobiles and Components
+ACAD,Health Care,Biotechnology
+ALNY,Health Care,Biotechnology
+ASND,Health Care,Biotechnology
+BBIO,Health Care,Biotechnology
+BIIB,Health Care,Biotechnology
+GILD,Health Care,Biotechnology
+INCY,Health Care,Biotechnology
+VRTX,Health Care,Biotechnology
+ACM,Industrials,Capital Goods
+ALLE,Industrials,Capital Goods
+AME,Industrials,Capital Goods
+AOS,Industrials,Capital Goods
+CDW,Industrials,Capital Goods
+DOV,Industrials,Capital Goods
+EMR,Industrials,Capital Goods
+GLW,Industrials,Capital Goods
+GPC,Industrials,Capital Goods
+ITW,Industrials,Capital Goods
+JCI,Industrials,Capital Goods
+KEYS,Industrials,Capital Goods
+MMM,Industrials,Capital Goods
+OTIS,Industrials,Capital Goods
+PLUG,Industrials,Capital Goods
+PWR,Industrials,Capital Goods
+ROK,Industrials,Capital Goods
+WMS,Industrials,Capital Goods
+XYL,Industrials,Capital Goods
+CTAS,Industrials,Commercial and Professional Services
+WM,Industrials,Commercial and Professional Services
+BIRD,Consumer Discretionary,Consumer Durables and Apparel
+CPRI,Consumer Discretionary,Consumer Durables and Apparel
+CROX,Consumer Discretionary,Consumer Durables and Apparel
+DECK,Consumer Discretionary,Consumer Durables and Apparel
+FIGS,Consumer Discretionary,Consumer Durables and Apparel
+LEVI,Consumer Discretionary,Consumer Durables and Apparel
+LULU,Consumer Discretionary,Consumer Durables and Apparel
+NKE,Consumer Discretionary,Consumer Durables and Apparel
+RL,Consumer Discretionary,Consumer Durables and Apparel
+TPR,Consumer Discretionary,Consumer Durables and Apparel
+DASH,Consumer Discretionary,Consumer Services
+SBUX,Consumer Discretionary,Consumer Services
+CNQ,Energy,Energy
+CVE,Energy,Energy
+CVX,Energy,Energy
+EOG,Energy,Energy
+HAL,Energy,Energy
+OXY,Energy,Energy
+SLB,Energy,Energy
+SU,Energy,Energy
+VLO,Energy,Energy
+XOM,Energy,Energy
+ADM,Consumer Staples,"Food, Beverage, and Tobacco"
+CELH,Consumer Staples,"Food, Beverage, and Tobacco"
+CHD,Consumer Staples,"Food, Beverage, and Tobacco"
+CL,Consumer Staples,"Food, Beverage, and Tobacco"
+DHI,Consumer Staples,"Food, Beverage, and Tobacco"
+EL,Consumer Staples,"Food, Beverage, and Tobacco"
+FIZZ,Consumer Staples,"Food, Beverage, and Tobacco"
+GPRO,Consumer Staples,"Food, Beverage, and Tobacco"
+GRMN,Consumer Staples,"Food, Beverage, and Tobacco"
+HNST,Consumer Staples,"Food, Beverage, and Tobacco"
+HSY,Consumer Staples,"Food, Beverage, and Tobacco"
+KMB,Consumer Staples,"Food, Beverage, and Tobacco"
+KO,Consumer Staples,"Food, Beverage, and Tobacco"
+LEN,Consumer Staples,"Food, Beverage, and Tobacco"
+MKC,Consumer Staples,"Food, Beverage, and Tobacco"
+MNST,Consumer Staples,"Food, Beverage, and Tobacco"
+PG,Consumer Staples,"Food, Beverage, and Tobacco"
+PHM,Consumer Staples,"Food, Beverage, and Tobacco"
+ABT,Health Care,Health Care Equipment and Services
+ALC,Health Care,Health Care Equipment and Services
+ALGN,Health Care,Health Care Equipment and Services
+BDX,Health Care,Health Care Equipment and Services
+BSX,Health Care,Health Care Equipment and Services
+CAH,Health Care,Health Care Equipment and Services
+DXCM,Health Care,Health Care Equipment and Services
+IDXX,Health Care,Health Care Equipment and Services
+ISRG,Health Care,Health Care Equipment and Services
+MCK,Health Care,Health Care Equipment and Services
+MDT,Health Care,Health Care Equipment and Services
+RMD,Health Care,Health Care Equipment and Services
+A,Health Care,Life Sciences Tools & Services
+ADPT,Health Care,Life Sciences Tools & Services
+CRL,Health Care,Life Sciences Tools & Services
+DHR,Health Care,Life Sciences Tools & Services
+ILMN,Health Care,Life Sciences Tools & Services
+TECH,Health Care,Life Sciences Tools & Services
+TXG,Health Care,Life Sciences Tools & Services
+AEM,Materials,Materials
+ALB,Materials,Materials
+APD,Materials,Materials
+BHP,Materials,Materials
+CF,Materials,Materials
+DD,Materials,Materials
+ECL,Materials,Materials
+LIN,Materials,Materials
+NUE,Materials,Materials
+PPG,Materials,Materials
+RBLX,Communication Services,Media and Entertainment
+TTD,Communication Services,Media and Entertainment
+AZN,Health Care,"Pharmaceuticals, Biotechnology, and Life Sciences"
+GSK,Health Care,"Pharmaceuticals, Biotechnology, and Life Sciences"
+JNJ,Health Care,"Pharmaceuticals, Biotechnology, and Life Sciences"
+LLY,Health Care,"Pharmaceuticals, Biotechnology, and Life Sciences"
+MRK,Health Care,"Pharmaceuticals, Biotechnology, and Life Sciences"
+NVO,Health Care,"Pharmaceuticals, Biotechnology, and Life Sciences"
+NVS,Health Care,"Pharmaceuticals, Biotechnology, and Life Sciences"
+SNY,Health Care,"Pharmaceuticals, Biotechnology, and Life Sciences"
+ZTS,Health Care,"Pharmaceuticals, Biotechnology, and Life Sciences"
+EQIX,Real Estate,Real Estate
+ANF,Consumer Discretionary,Retailing
+AZO,Consumer Discretionary,Retailing
+BBY,Consumer Discretionary,Retailing
+CPNG,Consumer Discretionary,Retailing
+HD,Consumer Discretionary,Retailing
+JMIA,Consumer Discretionary,Retailing
+LOW,Consumer Discretionary,Retailing
+NEGG,Consumer Discretionary,Retailing
+ROST,Consumer Discretionary,Retailing
+TDUP,Consumer Discretionary,Retailing
+TJX,Consumer Discretionary,Retailing
+TSCO,Consumer Discretionary,Retailing
+ULTA,Consumer Discretionary,Retailing
+WSM,Consumer Discretionary,Retailing
+AMAT,Information Technology,Semiconductors and Semiconductor Equipment
+AMD,Information Technology,Semiconductors and Semiconductor Equipment
+ASML,Information Technology,Semiconductors and Semiconductor Equipment
+AVGO,Information Technology,Semiconductors and Semiconductor Equipment
+ENPH,Information Technology,Semiconductors and Semiconductor Equipment
+ENTG,Information Technology,Semiconductors and Semiconductor Equipment
+FSLR,Information Technology,Semiconductors and Semiconductor Equipment
+INTC,Information Technology,Semiconductors and Semiconductor Equipment
+KLAC,Information Technology,Semiconductors and Semiconductor Equipment
+LRCX,Information Technology,Semiconductors and Semiconductor Equipment
+MCHP,Information Technology,Semiconductors and Semiconductor Equipment
+MRVL,Information Technology,Semiconductors and Semiconductor Equipment
+MU,Information Technology,Semiconductors and Semiconductor Equipment
+NVDA,Information Technology,Semiconductors and Semiconductor Equipment
+QCOM,Information Technology,Semiconductors and Semiconductor Equipment
+SEDG,Information Technology,Semiconductors and Semiconductor Equipment
+STM,Information Technology,Semiconductors and Semiconductor Equipment
+SWKS,Information Technology,Semiconductors and Semiconductor Equipment
+TER,Information Technology,Semiconductors and Semiconductor Equipment
+TSM,Information Technology,Semiconductors and Semiconductor Equipment
+TXN,Information Technology,Semiconductors and Semiconductor Equipment
+AAPL,Information Technology,Technology Hardware and Equipment
+ADBE,Information Technology,Technology Hardware and Equipment
+ADSK,Information Technology,Technology Hardware and Equipment
+AMPL,Information Technology,Technology Hardware and Equipment
+ASAN,Information Technology,Technology Hardware and Equipment
+BB,Information Technology,Technology Hardware and Equipment
+BOX,Information Technology,Technology Hardware and Equipment
+BRZE,Information Technology,Technology Hardware and Equipment
+CDNS,Information Technology,Technology Hardware and Equipment
+CRM,Information Technology,Technology Hardware and Equipment
+CRSR,Information Technology,Technology Hardware and Equipment
+CRWD,Information Technology,Technology Hardware and Equipment
+DDOG,Information Technology,Technology Hardware and Equipment
+DOCU,Information Technology,Technology Hardware and Equipment
+EPAM,Information Technology,Technology Hardware and Equipment
+FIVN,Information Technology,Technology Hardware and Equipment
+FRSH,Information Technology,Technology Hardware and Equipment
+FSLY,Information Technology,Technology Hardware and Equipment
+FTNT,Information Technology,Technology Hardware and Equipment
+GDDY,Information Technology,Technology Hardware and Equipment
+GTLB,Information Technology,Technology Hardware and Equipment
+HUBS,Information Technology,Technology Hardware and Equipment
+IT,Information Technology,Technology Hardware and Equipment
+KLTR,Information Technology,Technology Hardware and Equipment
+LOGI,Information Technology,Technology Hardware and Equipment
+MDB,Information Technology,Technology Hardware and Equipment
+NTAP,Information Technology,Technology Hardware and Equipment
+OKTA,Information Technology,Technology Hardware and Equipment
+PANW,Information Technology,Technology Hardware and Equipment
+PATH,Information Technology,Technology Hardware and Equipment
+SAP,Information Technology,Technology Hardware and Equipment
+SNOW,Information Technology,Technology Hardware and Equipment
+SNPS,Information Technology,Technology Hardware and Equipment
+STX,Information Technology,Technology Hardware and Equipment
+TEAM,Information Technology,Technology Hardware and Equipment
+TWLO,Information Technology,Technology Hardware and Equipment
+VRSN,Information Technology,Technology Hardware and Equipment
+WDC,Information Technology,Technology Hardware and Equipment
+WIX,Information Technology,Technology Hardware and Equipment
+ZS,Information Technology,Technology Hardware and Equipment
+ANET,Communication Services,Telecommunication Services
+CSCO,Communication Services,Telecommunication Services
+FFIV,Communication Services,Telecommunication Services
+MSI,Communication Services,Telecommunication Services
+CHRW,Industrials,Transportation
+CNI,Industrials,Transportation
+CSX,Industrials,Transportation
+EXPD,Industrials,Transportation
+JBHT,Industrials,Transportation
+ODFL,Industrials,Transportation
+UNP,Industrials,Transportation
+UPS,Industrials,Transportation
+XEL,Utilities,Utilities
