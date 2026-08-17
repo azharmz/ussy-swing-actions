@@ -35,6 +35,16 @@ kebawa ke payload JSON dan ditolak Supabase), tapi sebelumnya nggak
 kelihatan sama sekali di log run manapun karena nggak ada penanganan
 error di level ini. Sekarang kalau ini kejadian lagi, bakal muncul jelas
 di log GitHub Actions -- ticker/strategi mana, dan pesan error aslinya.
+
+CATATAN (v3): fix gap kecil -- di update yang mengubah STATUS (transisi ke
+missed/entered/sl_hit/tp_hit/closed_timeout), days_in_status yang sudah
+di-increment untuk hari itu sekarang IKUT disertakan di payload (sebelumnya
+kelewat di beberapa tempat: sl_hit_before_entry, missed/expired, sl_hit,
+tp_hit, closed_timeout -- cuma cabang "masih lanjut, belum transisi" yang
+sudah benar dari awal). Efeknya: days_in_status yang tersimpan buat baris
+yang sudah resolved/missed sekarang akurat sampai hari terakhir, bukan
+ketinggalan 1 hari. Nggak ngubah threshold ENTRY_WINDOW_DAYS/
+HOLDING_PERIOD_DAYS itu sendiri, cuma ngebenerin apa yang KE-SIMPAN.
 """
 import pandas as pd
 
@@ -134,11 +144,13 @@ def update_active_signals(supabase, price_data):
             continue  # sinyal baru dibuat hari ini, entry window mulai besok
 
         new_low, new_high = _updated_low_high(sig, today)
+        new_days = sig["days_in_status"] + 1
 
         if sig["status"] == "pending":
             if today["Low"] <= sig["stop_loss"]:
                 ok = _safe_update(supabase, sig, {
                     "status": "missed", "missed_reason": "sl_hit_before_entry",
+                    "days_in_status": new_days,
                     "lowest_price": new_low, "highest_price": new_high,
                 }, context)
                 if not ok: fail_count += 1
@@ -162,10 +174,10 @@ def update_active_signals(supabase, price_data):
                 }, context)
                 if not ok: fail_count += 1
             else:
-                new_days = sig["days_in_status"] + 1
                 if new_days >= ENTRY_WINDOW_DAYS:
                     ok = _safe_update(supabase, sig, {
                         "status": "missed", "missed_reason": "expired",
+                        "days_in_status": new_days,
                         "lowest_price": new_low, "highest_price": new_high,
                     }, context)
                 else:
@@ -184,6 +196,7 @@ def update_active_signals(supabase, price_data):
                 ok = _safe_update(supabase, sig, {
                     "status": "sl_hit", "exit_price": exit_price,
                     "exit_date": today_date, "pnl_pct": pnl,
+                    "days_in_status": new_days,
                     "lowest_price": new_low, "highest_price": new_high,
                 }, context)
                 if not ok: fail_count += 1
@@ -193,17 +206,18 @@ def update_active_signals(supabase, price_data):
                 ok = _safe_update(supabase, sig, {
                     "status": "tp_hit", "exit_price": exit_price,
                     "exit_date": today_date, "pnl_pct": pnl,
+                    "days_in_status": new_days,
                     "lowest_price": new_low, "highest_price": new_high,
                 }, context)
                 if not ok: fail_count += 1
             else:
-                new_days = sig["days_in_status"] + 1
                 if new_days >= HOLDING_PERIOD_DAYS:
                     exit_price = round(float(today["Close"]), 2)
                     pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
                     ok = _safe_update(supabase, sig, {
                         "status": "closed_timeout", "exit_price": exit_price,
                         "exit_date": today_date, "pnl_pct": pnl,
+                        "days_in_status": new_days,
                         "lowest_price": new_low, "highest_price": new_high,
                     }, context)
                 else:
