@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USSY Swing Screener</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0c1016;
+    --panel: #131922;
+    --panel-2: #182029;
+    --line: #263140;
+    --text: #e7e9ec;
+    --text-dim: #8993a3;
+    --blue: #4f8cff;
+    --blue-dim: #3a5f9e;
+    --green: #46b478;
+    --red: #d1584d;
+    --purple: #9b7fd4;
+    --radius: 3px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  .wrap{ max-width:1320px; margin:0 auto; padding:28px 24px 60px; }
+
+  header{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    border-bottom:1px solid var(--line); padding-bottom:18px; margin-bottom:22px;
+    gap:16px; flex-wrap:wrap;
+  }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.14em;
+    color:var(--blue); text-transform:uppercase; margin-bottom:6px;
+  }
+  h1{ font-family:'Space Grotesk', sans-serif; font-size:26px; margin:0; font-weight:600; letter-spacing:-0.01em; }
+  h1 .accent{ color:var(--blue); }
+  .sub{ color:var(--text-dim); font-size:13px; margin-top:4px; }
+
+  .stats-grid{
+    display:grid; grid-template-columns:repeat(6,1fr); gap:1px;
+    background:var(--line); border:1px solid var(--line); border-radius:6px; overflow:hidden;
+    margin-bottom:20px;
+  }
+  .stat-card{ background:var(--panel); padding:16px 14px; position:relative; }
+  #paperStatsGrid, #exposureStatsGrid{ grid-template-columns:repeat(5,1fr); }
+  .stat-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-dim); margin-bottom:8px; }
+  .stat-value{ font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600; }
+  .stat-sub{ font-size:11px; color:var(--text-dim); margin-top:4px; }
+  .pos{ color:var(--green); } .neg{ color:var(--red); } .blue-txt{ color:var(--blue); }
+
+  .note{
+    font-size:12px; color:var(--text-dim); background:var(--panel);
+    border:1px solid var(--line); border-left:3px solid var(--blue-dim);
+    padding:10px 14px; border-radius:var(--radius); margin-bottom:20px; line-height:1.55;
+  }
+
+  .panel{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:18px 18px 10px; margin-bottom:20px; }
+  .panel-title{ font-family:'Space Grotesk',sans-serif; font-size:13.5px; font-weight:600; margin:0 0 12px; display:flex; align-items:center; gap:8px; }
+  .panel-title .tag{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--blue); border:1px solid var(--blue-dim); padding:1px 6px; border-radius:2px; }
+
+  .file-controls{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  @media (max-width:600px){
+    .file-controls{ width:100%; gap:8px; }
+    .file-controls button{ font-size:12px; padding:7px 10px; flex:0 1 auto; }
+  }
+
+  .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:16px; }
+  .tab{
+    padding:9px 16px; font-size:12.5px; font-weight:600; color:var(--text-dim);
+    cursor:pointer; border-bottom:2px solid transparent; user-select:none;
+  }
+  .tab.active{ color:var(--text); border-bottom-color:var(--blue); }
+  .tab .count-tag{ margin-left:5px; }
+
+  .filter-bar{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+  .filter-bar input[type=text], .filter-bar select{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    padding:7px 10px; border-radius:var(--radius); font-size:12.5px; font-family:'IBM Plex Sans',sans-serif;
+  }
+  .filter-bar input[type=text]{
+    min-width:160px;
+  }
+  .filter-bar .spacer{ flex:1; }
+  .count-tag{ font-size:11.5px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; }
+
+  button, .btn{
+    font-family:'IBM Plex Sans', sans-serif; font-size:13px; font-weight:600;
+    background:var(--panel-2); color:var(--text); border:1px solid var(--line);
+    padding:8px 14px; border-radius:var(--radius); cursor:pointer; transition:.12s border-color, .12s background;
+  }
+  button:hover, .btn:hover{ border-color:var(--blue-dim); background:#1e2733; }
+  button:disabled{ opacity:.4; cursor:default; }
+  button:disabled:hover{ border-color:var(--line); background:var(--panel-2); }
+
+  .pagination{ display:flex; gap:6px; justify-content:center; padding:14px 0; }
+  .pagination button{ padding:5px 11px; font-size:12px; }
+  .pagination button.active{ border-color:var(--blue); color:var(--blue); }
+  .pagination .ellipsis{ color:var(--text-dim); padding:5px 2px; }
+
+  .table-wrap{ overflow-x:auto; border:1px solid var(--line); border-radius:6px; }
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  thead th{
+    text-align:left; padding:9px 12px; background:var(--panel-2); color:var(--text-dim);
+    font-weight:600; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em;
+    border-bottom:1px solid var(--line); white-space:nowrap; position:sticky; top:0;
+  }
+  tbody td{ padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  tbody tr{ cursor:pointer; }
+  tbody tr:hover{ background:#171f2a; }
+  .symbol{ font-family:'IBM Plex Mono',monospace; font-weight:600; letter-spacing:.02em; }
+
+  .badge{ font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:10px; letter-spacing:.02em; white-space:nowrap; }
+  .badge-kuat{ background:rgba(70,180,120,.15); color:var(--green); }
+  .badge-watchlist{ background:rgba(79,140,255,.15); color:var(--blue); }
+  .badge-no_signal{ background:rgba(137,147,163,.12); color:var(--text-dim); }
+  .sig-chip{
+    font-size:10px; padding:2px 6px; border-radius:2px; margin:0 4px 4px 0; display:inline-block;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text-dim);
+  }
+
+  .state{ padding:60px 20px; text-align:center; color:var(--text-dim); font-size:13.5px; }
+  .state h2{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:18px; color:var(--text); margin:0 0 8px; }
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(4,6,9,.7); display:none;
+    align-items:flex-start; justify-content:center; padding:40px 20px; overflow-y:auto; z-index:50;
+  }
+  .overlay.show{ display:flex; }
+  .modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; max-width:640px; width:100%;
+    padding:26px 28px 30px;
+  }
+  .modal-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; gap:10px; }
+  .modal-head h3{ font-family:'Space Grotesk',sans-serif; margin:0; font-size:20px; min-width:0; }
+  .modal-head .x{ cursor:pointer; color:var(--text-dim); font-size:20px; line-height:1; padding:2px 6px; flex-shrink:0; }
+  .modal-head .x:hover{ color:var(--text); }
+  .modal-sub{ color:var(--text-dim); font-size:12px; margin-bottom:18px; font-family:'IBM Plex Mono',monospace; }
+  .field-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px 16px; margin-bottom:18px; }
+  .field-grid.two{ grid-template-columns:repeat(2,1fr); }
+  .field{ background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radius); padding:8px 10px; min-width:0; }
+  .field .k{ font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); margin-bottom:3px; }
+  .field .v{ font-family:'IBM Plex Mono',monospace; font-size:13px; }
+  .section-h{ font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--blue); margin:18px 0 8px; }
+
+  footer{ text-align:center; color:var(--text-dim); font-size:11.5px; margin-top:30px; }
+
+  @media (max-width:900px){
+    .stats-grid, #paperStatsGrid, #exposureStatsGrid{ grid-template-columns:repeat(3,1fr); }
+    .field-grid{ grid-template-columns:repeat(2,1fr); }
+  }
+  @media (max-width:600px){
+    .wrap{ padding:18px 14px 40px; }
+    header{ padding-bottom:14px; margin-bottom:18px; gap:12px; }
+    h1{ font-size:21px; }
+    .stats-grid, #paperStatsGrid, #exposureStatsGrid{ grid-template-columns:repeat(2,1fr); }
+    .field-grid{ grid-template-columns:1fr; gap:8px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="brand-eyebrow">uswing.anyapp.my.id &middot; USSY Swing Screener</div>
+      <h1><span class="accent">USSY</span> Swing</h1>
+      <div class="sub">Screening breakout harian dari universe halal x XTB, scoring otomatis via Colab + GitHub Actions</div>
+      <div class="sub" id="lastRefreshIndicator" style="font-size:11px;opacity:.7;margin-top:2px;"></div>
+    </div>
+    <div class="file-controls" id="fileControls">
+      <button onclick="manualRefresh()" id="refreshBtn">&#8635; Refresh</button>
+    </div>
+  </header>
+
+  <div id="loadingState" class="state"><h2>Memuat data…</h2></div>
+
+  <div id="dashboard" style="display:none">
+
+    <div class="tabs" id="viewToggle">
+      <div class="tab" data-view="snapshot">Screening Harian (Snapshot)</div>
+      <div class="tab active" data-view="posisi">Posisi Aktif</div>
+      <div class="tab" data-view="riwayat">Riwayat</div>
+    </div>
+
+    <div id="tab-trades">
+      <div id="posisiExtras" style="display:block">
+        <div class="stats-grid" id="exposureStatsGrid"></div>
+        <div class="note" id="portfolioHeatNote"></div>
+
+        <div class="panel">
+          <div class="panel-title">Top 5 Konsentrasi <span class="tag">by posisi value</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Ticker</th><th>Strategi</th><th>Nilai Posisi</th><th>% dari Total Invested</th></tr>
+              </thead>
+              <tbody id="exposureTop5Body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Konsentrasi per Sektor <span class="tag">data Musaffa Q2 2026</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Sektor</th><th>Jml Posisi</th><th>Nilai Posisi</th><th>% dari Total Invested</th><th>Risiko ke SL</th></tr>
+              </thead>
+              <tbody id="exposureSectorBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Cumulative Portfolio Return <span class="tag">posisi aktif vs SPY</span></div>
+          <div id="returnCompareChart"></div>
+        </div>
+      </div>
+
+      <div id="riwayatExtras" style="display:none">
+        <div class="stats-grid" id="paperStatsGrid"></div>
+        <div class="note" id="paperNote"></div>
+        <div class="panel">
+          <div class="panel-title">Total Equity <span class="tag">paper trading</span></div>
+          <div id="paperEquityChart"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Drawdown <span class="tag">mark-to-market vs realized-only</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Basis</th><th>Max Drawdown</th><th>Peak Equity</th><th>Recovery</th></tr>
+              </thead>
+              <tbody id="drawdownBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Performa Sinyal <span class="tag">resolved, missed dikeluarkan</span></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Grup</th><th>n</th><th>Win Rate</th><th>Profit Factor</th><th>Risk/Reward</th><th>Avg PnL</th></tr>
+              </thead>
+              <tbody id="perfBreakdownBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="searchSymbol" placeholder="Cari simbol saham...">
+        <select id="filterType">
+          <option value="all">Semua Strategi</option>
+          <option value="breakout">Breakout</option>
+          <option value="pullback">Pullback</option>
+        </select>
+        <span id="filterStatusWrap" style="display:none">
+          <select id="filterStatus"></select>
+        </span>
+        <div class="spacer"></div>
+        <span class="count-tag" id="tradeCount"></span>
+        <button onclick="downloadTradesCSV()">&#8681; CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr id="signalsHeadRow"></tr>
+          </thead>
+          <tbody id="signalsBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="signalsPagination"></div>
+    </div>
+
+    <div id="viewSnapshot" style="display:none">
+      <div class="note">
+        Skor 0-100 tiap strategi dikalibrasi lewat backtest 3 tahun terpisah. <b>Breakout</b>:
+        tier Kuat = score=100 (trend+momentum+volume+RS sekaligus); tier Watchlist di bawah itu
+        belum tervalidasi solid. <b>Pullback</b>: tier Kuat = score=100 (trend+momentum, RS dibuang
+        karena menurunkan robustness); tier Watchlist = score 50 (trend saja, momentum belum masuk
+        zona pullback) — berbeda dari breakout, kombinasi ini SUDAH divalidasi terpisah dan tetap
+        lolos ambang (win rate 49.4%, profit factor 1.18 setelah outlier dibuang), meski lebih lemah
+        dari tier Kuat. Hanya tier Kuat yang menghasilkan sinyal entry/SL/TP aktual.
+        <b>Status: masa observasi live 3 bulan</b> — kriteria kedua strategi sengaja tidak diubah
+        dulu, biar hasil live jadi validasi out-of-sample yang jujur. <span style="color:var(--red)">&#9888; Breakout</span>
+        diketahui fragile: profit factor jatuh di bawah breakeven begitu outlier ticker dibuang atau
+        slippage realistis disimulasikan — dipertahankan jalan buat lihat apakah ini benar collapse di
+        dunia nyata atau tidak. Bukan rekomendasi finansial.
+      </div>
+
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <div class="tabs" id="mainTabs">
+        <div class="tab active" data-tier="kuat">Kuat <span class="count-tag" id="count-kuat"></span></div>
+        <div class="tab" data-tier="watchlist">Watchlist <span class="count-tag" id="count-watchlist"></span></div>
+        <div class="tab" data-tier="all">Semua <span class="count-tag" id="count-all"></span></div>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="searchSymbolSnapshot" placeholder="Cari ticker...">
+        <div class="spacer"></div>
+        <span class="count-tag" id="rowCount"></span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ticker</th><th>Strategi</th><th>Score</th><th>Tier</th><th>Close</th><th>RSI14</th>
+              <th>Jarak MA20</th><th>Rel. Volume</th><th>RS vs SPY</th><th>Sinyal</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    </div>
+  </div>
+
+  <div id="emptyState" class="state" style="display:none">
+    <h2>Belum ada data</h2>
+    <p>Jalankan notebook produksi (Colab) atau tunggu cron GitHub Actions berikutnya untuk mengisi data.</p>
+  </div>
+
+  <div id="errorState" class="state" style="display:none">
+    <h2>Gagal memuat data</h2>
+    <p id="errorMsg"></p>
+  </div>
+
+  <footer>Data screening, bukan rekomendasi finansial &middot; anyapp.my.id</footer>
+</div>
+
+<div class="overlay" id="modalOverlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal">
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://pklhkbcglltayrdqeeph.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_m-l3DTy0JPROsI_FtvV7_Q_uqghyhuR";
+
+  let rows = [];
+  let signalRows = [];
+  let activeTier = "kuat";
+  let activeMainTab = "posisi"; // "snapshot" | "posisi" | "riwayat"
+  // State tabel Posisi Aktif & Riwayat SENGAJA dipisah total (bukan shared) --
+  // sort/filter/search/page di satu tab tidak boleh mempengaruhi tab lainnya.
+  const tabState = {
+    posisi: { filterType: "all", filterStatus: null, sort: { key: "signal_date", dir: -1 }, searchTerm: "", page: 1, totalCount: 0 },
+    riwayat: { filterType: "all", filterStatus: "resolved_only", sort: { key: "signal_date", dir: -1 }, searchTerm: "", page: 1, totalCount: 0 },
+  };
+  function curTab(){ return tabState[activeMainTab] || tabState.posisi; }
+  let searchTerm = ""; // khusus search di tab Screening Snapshot
+
+  const PAGE_SIZE = 30;
+  // currentPage & totalSignalsCount sekarang di tabState[activeMainTab].page/.totalCount
+
+  // ============================================
+  // Paper Trading — simulasi portofolio dari trade_signals aktual.
+  // Ini SIMULASI ilustratif, bukan transaksi riil di broker. Asumsi (bisa diubah di sini):
+  //   - modal awal $40,000
+  //   - tiap sinyal dieksekusi diberi porsi 2% dari equity saat entry (bukan 10% --
+  //     volume sinyal live ternyata jauh lebih tinggi dari retail biasa: overlap
+  //     posisi bersamaan pernah tembus 50 dalam 3 minggu observasi pertama, jadi
+  //     porsi per-trade dikecilkan biar hampir semua sinyal tetap "diambil" di
+  //     simulasi, bukan mayoritas ke-skip karena slot penuh)
+  //   - maks 60 posisi terbuka bersamaan (buffer di atas rekor 50) — kas juga jadi
+  //     pengaman alami: kalau cash < ukuran posisi berikutnya, sinyal itu di-skip
+  // ============================================
+  const PAPER_START_CAPITAL = 40000;   // modal awal simulasi, USD
+  const PAPER_SIZE_PCT = 0.02;         // ukuran posisi = 2% equity saat entry
+  const PAPER_MAX_CONCURRENT = 60;     // maks posisi terbuka bersamaan (buffer di atas rekor 50)
+
+  // ============================================
+  // Cache localStorage — stale-while-revalidate.
+  // Supabase tetap source of truth; cache cuma buat percepat initial render.
+  // Nggak ada TTL/invalidation kompleks: cache selalu ditampilkan dulu
+  // (kalau ada), lalu SELALU di-refresh dari Supabase di background.
+  // ============================================
+  const CACHE_PREFIX = "usswing_cache_";
+
+  function cacheGet(key){
+    try{
+      const raw = localStorage.getItem(CACHE_PREFIX + key);
+      if(!raw) return null;
+      return JSON.parse(raw); // { data, cachedAt }
+    }catch(e){ return null; }
+  }
+
+  function cacheSet(key, data){
+    try{
+      localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ data, cachedAt: Date.now() }));
+    }catch(e){ /* storage penuh/disabled -- diamkan, cache cuma optimisasi */ }
+  }
+
+  function updateLastRefreshIndicator(cachedAt, isLive){
+    const el = document.getElementById("lastRefreshIndicator");
+    if(!el) return;
+    if(isLive){
+      el.textContent = "Data terbaru dari server";
+    }else if(cachedAt){
+      const mins = Math.round((Date.now() - cachedAt) / 60000);
+      el.textContent = mins < 1 ? "Menampilkan cache, memuat data terbaru…"
+        : `Menampilkan cache (${mins} menit lalu), memuat data terbaru…`;
+    }
+  }
+
+  async function sbFetch(path){
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    if(!res.ok) throw new Error(`HTTP ${res.status} @ ${path}`);
+    return res.json();
+  }
+
+  async function sbFetchWithCount(path){
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: {
+        apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
+        Prefer: "count=exact"
+      }
+    });
+    if(!res.ok) throw new Error(`HTTP ${res.status} @ ${path}`);
+    const data = await res.json();
+    const range = res.headers.get("content-range"); // format "0-29/145"
+    const total = range && range.includes("/") ? parseInt(range.split("/")[1], 10) : data.length;
+    return { data, total: isNaN(total) ? data.length : total };
+  }
+
+  async function loadSignalsPage(){
+    const st = curTab();
+    const offset = (st.page - 1) * PAGE_SIZE;
+    const queryParams = buildTradesFilterParams();
+    const isDefaultSort = st.sort.key === "signal_date" && st.sort.dir === -1;
+    const isDefaultStatus = activeMainTab !== "riwayat" || st.filterStatus === "resolved_only";
+    const isDefaultView = st.page === 1 && st.filterType === "all" && isDefaultStatus && !st.searchTerm && isDefaultSort;
+    const cacheKey = `signals_default_${activeMainTab}`;
+    const orderParam = `${st.sort.key}.${st.sort.dir === 1 ? "asc" : "desc"},id.desc`;
+
+    renderSignalsHeader();
+
+    // Cache cuma dipakai buat default view (halaman 1, tanpa filter/sort apa pun) --
+    // itu yang kebuka pertama kali tiap load halaman. Filter/sort/pindah halaman
+    // selalu fetch fresh langsung, nggak lewat cache.
+    if(isDefaultView){
+      const cached = cacheGet(cacheKey);
+      if(cached){
+        signalRows = cached.data.rows;
+        st.totalCount = cached.data.total;
+        renderSignals();
+        renderPagination();
+      }
+    }
+
+    try{
+      const { data, total } = await sbFetchWithCount(
+        `trade_signals_full_v?select=*&order=${orderParam}&limit=${PAGE_SIZE}&offset=${offset}${queryParams}`
+      );
+      signalRows = data;
+      st.totalCount = total;
+      renderSignals();
+      renderPagination();
+      if(isDefaultView) cacheSet(cacheKey, { rows: data, total });
+    }catch(e){
+      console.warn("trade_signals belum bisa dimuat:", e.message);
+      // Kalau fetch gagal tapi cache masih nampil (sudah di-render di atas),
+      // biarkan cache tetap tampil -- jangan gagalkan tampilan.
+    }
+  }
+
+  // Persis pola pagination ussy-signal.html: nomor 1..totalPages, ellipsis
+  // buat gap, first/last selalu tampil, current±1 tampil.
+  function renderPagination(){
+    const st = curTab();
+    const totalPages = Math.max(1, Math.ceil(st.totalCount / PAGE_SIZE));
+    st.page = Math.min(st.page, totalPages);
+    const pag = document.getElementById("signalsPagination");
+
+    let html = `<button ${st.page===1?"disabled":""} onclick="gotoSignalsPage(${st.page-1})">&lsaquo;</button>`;
+    for(let p = 1; p <= totalPages; p++){
+      if(p === 1 || p === totalPages || Math.abs(p - st.page) <= 1){
+        html += `<button class="${p===st.page?"active":""}" onclick="gotoSignalsPage(${p})">${p}</button>`;
+      }else if(Math.abs(p - st.page) === 2){
+        html += `<span class="ellipsis">&hellip;</span>`;
+      }
+    }
+    html += `<button ${st.page===totalPages?"disabled":""} onclick="gotoSignalsPage(${st.page+1})">&rsaquo;</button>`;
+    pag.innerHTML = html;
+  }
+
+  function gotoSignalsPage(p){
+    curTab().page = p;
+    loadSignalsPage();
+  }
+
+  async function loadData(){
+    // 1. Tampilkan cache dulu kalau ada -- render instan tanpa nunggu network.
+    const cachedScreener = cacheGet("latest_screener");
+    if(cachedScreener && cachedScreener.data.length > 0){
+      rows = cachedScreener.data;
+      document.getElementById("loadingState").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      render();
+      updateLastRefreshIndicator(cachedScreener.cachedAt, false);
+    }
+    // 2. Bersamaan itu, selalu fetch fresh dari Supabase (source of truth).
+    try{
+      const fresh = await sbFetch("latest_screener?select=*&order=score.desc");
+      rows = fresh;
+      cacheSet("latest_screener", fresh);
+      document.getElementById("loadingState").style.display = "none";
+
+      if(rows.length === 0){
+        document.getElementById("dashboard").style.display = "none";
+        document.getElementById("emptyState").style.display = "block";
+        return;
+      }
+      document.getElementById("emptyState").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      render();
+      updateLastRefreshIndicator(null, true);
+
+      // sinyal & performa dimuat terpisah — kalau tabel ini belum ada
+      // (migrasi belum jalan) jangan sampai gagalkan seluruh dashboard.
+      await loadSignalsPage();
+
+      try{
+        const allTrades = await sbFetch(
+          "trade_signals?select=ticker,strategy,status,entry_date,exit_date,entry_price_actual,exit_price,mark_price,pnl_pct,stop_loss,take_profit" +
+          "&status=in.(entered,tp_hit,sl_hit,closed_timeout)&order=entry_date.asc&limit=2000"
+        );
+        const takenTrades = allTrades.filter(t => t.entry_date);
+
+        renderPerfBreakdown(computePerfBreakdown(takenTrades));
+
+        if(takenTrades.length){
+          const firstDate = takenTrades.reduce((min, t) => t.entry_date < min ? t.entry_date : min, takenTrades[0].entry_date);
+
+          // Kalender hari perdagangan + return SPY, dari daily_features (sudah ada
+          // sejak main.py push baris SPY tiap hari).
+          const spyRows = await sbFetch(
+            `daily_features?select=date,close&ticker=eq.SPY&date=gte.${firstDate}&order=date.asc&limit=2000`
+          );
+          const tradingDates = spyRows.map(r => r.date);
+
+          // Harga close tiap ticker yang pernah ditrade, buat mark-to-market
+          // posisi terbuka HARIAN (bukan cuma pas open/close event).
+          // PENTING: di-paginasi manual -- Supabase/PostgREST punya batas default
+          // 1000 baris per response yang OVERRIDE parameter limit di URL. Kalau
+          // kebutuhan (jumlah ticker x jumlah hari) lebih dari 1000, fetch satu
+          // kali bakal ke-truncate diam-diam (nggak error, cuma hasilnya kurang) --
+          // ini persis yang bikin tanggal-tanggal terbaru "hilang" dari closeLookup
+          // dan Cumulative Portfolio Return jatuh ke 0% di hari-hari terakhir.
+          const tickers = [...new Set(takenTrades.map(t => t.ticker))];
+          const closeLookup = {};
+          if(tickers.length && tradingDates.length){
+            const PAGE = 1000;
+            let offset = 0;
+            let priceRows = [];
+            while(true){
+              const batch = await sbFetch(
+                `daily_features?select=ticker,date,close&ticker=in.(${tickers.join(",")})` +
+                `&date=gte.${firstDate}&order=date.asc,ticker.asc&limit=${PAGE}&offset=${offset}`
+              );
+              priceRows = priceRows.concat(batch);
+              if(batch.length < PAGE) break;
+              offset += PAGE;
+            }
+            priceRows.forEach(r => {
+              (closeLookup[r.ticker] ||= {})[r.date] = r.close;
+            });
+          }
+
+          const sim = simulatePaperPortfolioDaily(takenTrades, tradingDates, closeLookup);
+          renderPaperStats(sim);
+          renderPaperEquityChart(sim);
+          renderDrawdown(sim);
+
+          const activeReturn = computeActivePositionsReturn(takenTrades, tradingDates, closeLookup);
+          renderReturnCompareChart(activeReturn, spyRows);
+
+          let sectorLookup = {};
+          try{
+            const sectorRows = await sbFetch("ticker_sector?select=ticker,sector");
+            sectorRows.forEach(r => { sectorLookup[r.ticker] = r.sector; });
+          }catch(e){ console.warn("ticker_sector belum bisa dimuat:", e.message); }
+          renderExposureSnapshot(computeExposureSnapshot(sim, sectorLookup));
+        }else{
+          renderPaperStats(null);
+          renderPaperEquityChart(null);
+          renderDrawdown(null);
+          renderReturnCompareChart(null, null);
+          renderExposureSnapshot(null);
+        }
+      }catch(e){ console.warn("paper trading belum bisa dimuat:", e.message); }
+
+    }catch(err){
+      document.getElementById("loadingState").style.display = "none";
+      // Kalau fetch gagal TAPI kita punya cache yang udah ke-render di atas,
+      // biarkan cache tetap tampil -- jangan gagalkan seluruh dashboard.
+      if(!cachedScreener || cachedScreener.data.length === 0){
+        document.getElementById("errorState").style.display = "block";
+        document.getElementById("errorMsg").textContent = err.message;
+      }else{
+        console.warn("Gagal refresh data terbaru, tetap tampilkan cache:", err.message);
+      }
+    }
+  }
+
+  // Sort tabel Sinyal — beda dari ussy-signal.html (yang client-side karena
+  // semua trade dimuat sekaligus), di sini SERVER-SIDE karena kita paginasi
+  // dari Supabase (sort cuma di 30 baris yang lagi kebuka nggak akurat).
+  // Posisi Aktif (pending+entered): cuma kolom penting -- detail lengkap
+  // (Tgl Sinyal, Trigger, SL, TP, Low, High) tetap ada di modal per baris.
+  const POSISI_HEAD_COLS = [
+    ["signal_date", "Tgl Sinyal"], ["ticker", "Ticker"], ["strategy", "Strategi"],
+    ["entry_price", "Trigger"], ["entry_price_actual", "Entry"],
+    ["stop_loss", "Stop Loss"], ["take_profit", "Take Profit"],
+    ["days_in_status", "Hari Berjalan"],
+    ["mark_exit_price", "Mark"], ["pnl_display", "Floating PnL"],
+  ];
+  // Riwayat (tp_hit/sl_hit/closed_timeout/missed): cuma kolom penting --
+  // detail lengkap tetap ada di modal per baris.
+  const RIWAYAT_HEAD_COLS = [
+    ["ticker", "Ticker"], ["strategy", "Strategi"],
+    ["entry_price_actual", "Entry"],
+    ["outcome_label", "Outcome"],
+    ["days_in_status", "Hari Ditahan"],
+    ["mark_exit_price", "Exit"], ["pnl_display", "Realized PnL"],
+  ];
+  const STATUS_OPTIONS_RIWAYAT = [
+    ["resolved_only", "Semua (kecuali Expired/SL Duluan)"],
+    ["tp_hit", "TP HIT"], ["sl_hit", "SL HIT"], ["closed_timeout", "TIMEOUT"],
+    ["missed", "Expired / SL Duluan"],
+  ];
+
+  function activeHeadCols(){
+    return activeMainTab === "riwayat" ? RIWAYAT_HEAD_COLS : POSISI_HEAD_COLS;
+  }
+
+  const CELL_RENDERERS = {
+    signal_date: s => `<td class="mono">${escapeHtml(s.signal_date)}</td>`,
+    ticker: s => `<td class="symbol">${escapeHtml(s.ticker)}</td>`,
+    strategy: s => `<td>${strategyBadge(s.strategy)}</td>`,
+    entry_price: s => `<td class="mono">${fmt(s.entry_price)}</td>`,
+    entry_price_actual: s => `<td>${entryStatusBadge(s)}</td>`,
+    stop_loss: s => `<td class="mono neg">${fmt(s.stop_loss)}</td>`,
+    take_profit: s => `<td class="mono pos">${fmt(s.take_profit)}</td>`,
+    lowest_price: s => `<td class="mono">${fmt(s.lowest_price)}</td>`,
+    highest_price: s => `<td class="mono">${fmt(s.highest_price)}</td>`,
+    outcome_label: s => `<td>${outcomeBadge(s)}</td>`,
+    days_in_status: s => `<td class="mono">${s.days_in_status ?? 0}d</td>`,
+    mark_exit_price: s => `<td class="mono">${markExitDisplay(s)}</td>`,
+    pnl_display: s => {
+      const p = pnlDisplayFor(s);
+      return `<td class="mono ${p.cls}">${p.text}</td>`;
+    },
+  };
+
+  function sortTable(key){
+    const st = curTab();
+    if(st.sort.key === key) st.sort.dir *= -1;
+    else st.sort = { key, dir: key === "signal_date" ? -1 : 1 };
+    st.page = 1;
+    loadSignalsPage();
+  }
+
+  function sortArrow(key){
+    const st = curTab();
+    if(st.sort.key !== key) return "";
+    return st.sort.dir === 1 ? " \u25B2" : " \u25BC";
+  }
+
+  function renderSignalsHeader(){
+    document.getElementById("signalsHeadRow").innerHTML = activeHeadCols().map(([key, label]) => {
+      if(key === null) return `<th>${label}</th>`;
+      return `<th style="cursor:pointer;user-select:none" onclick="sortTable('${key}')" title="Klik untuk urutkan">${label}${sortArrow(key)}</th>`;
+    }).join("");
+  }
+
+  function renderSignals(){
+    const filtered = signalRows;
+    const cols = activeHeadCols();
+    const countEl = document.getElementById("tradeCount");
+    const countLabel = activeMainTab === "riwayat" ? "riwayat" : "posisi";
+    if(countEl) countEl.textContent = `${curTab().totalCount} ${countLabel}`;
+
+    if(filtered.length === 0){
+      const emptyMsg = activeMainTab === "riwayat" ? "Belum ada posisi yang exit." : "Tidak ada posisi aktif saat ini.";
+      document.getElementById("signalsBody").innerHTML =
+        `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--text-dim);padding:20px;">${emptyMsg}</td></tr>`;
+      return;
+    }
+    document.getElementById("signalsBody").innerHTML = filtered.map((s, idx) => {
+      const cells = cols.map(([key]) => CELL_RENDERERS[key](s)).join("");
+      return `<tr onclick="openSignalModal(${idx})" style="cursor:pointer">${cells}</tr>`;
+    }).join("");
+  }
+
+  // Gabungan Mark (selama running) + Exit (setelah resolved) jadi 1 kolom.
+  // Buat TP_HIT/SL_HIT, dikasih label "TP @ harga"/"SL @ harga" langsung --
+  // biar nggak perlu geser mata ke kolom Take Profit/Stop Loss buat mastiin.
+  function markExitDisplay(s){
+    if(s.status === "pending" || s.status === "entered"){
+      return s.mark_price == null ? "—" : fmt(s.mark_price);
+    }
+    if(s.status === "tp_hit" || s.status === "sl_hit" || s.status === "closed_timeout"){
+      return fmt(s.exit_price);
+    }
+    return "—"; // missed -- nggak pernah ada posisi, nggak ada harga relevan
+  }
+
+  // PnL: realized (sudah resolve, dari pnl_pct tersimpan) vs floating
+  // (masih 'entered', dihitung dari mark_price -- BELUM final, bisa berubah
+  // tiap hari). Floating ditandai "~" di depan biar nggak ketuker sama
+  // realized -- dua-duanya angka %, tapi maknanya beda (final vs sementara).
+  function pnlDisplayFor(s){
+    if(s.pnl_pct != null){
+      return { text: fmt(s.pnl_pct) + "%", cls: s.pnl_pct >= 0 ? "pos" : "neg" };
+    }
+    if(s.status === "entered" && s.mark_price != null && s.entry_price_actual != null){
+      const floatingPnl = (s.mark_price - s.entry_price_actual) / s.entry_price_actual * 100;
+      return { text: fmt(floatingPnl) + "%", cls: floatingPnl >= 0 ? "pos" : "neg" };
+    }
+    return { text: "—", cls: "" };
+  }
+
+  // Sumbu 1: status entry (fakta -- sudah/belum ke-fill)
+  function entryStatusBadge(s){
+    // Cek entry_price_actual (BUKAN status === 'entered') -- begitu sinyal
+    // resolve ke tp_hit/sl_hit/closed_timeout, status field udah berubah
+    // dari 'entered' ke status final itu, jadi cek by status doang bakal
+    // salah nunjukkin "Belum Entry" padahal jelas-jelas udah pernah entry.
+    if(s.entry_price_actual != null){
+      return `<span class="badge badge-kuat">ENTRY @ ${fmt(s.entry_price_actual)}</span>`;
+    }
+    return `<span class="badge badge-watchlist">BELUM ENTRY</span>`;
+  }
+
+  // Sumbu 2: outcome (RUNNING selama pending/entered, lalu resolve ke
+  // TP/SL/Timeout/Expired). Tabel ini nampilin SEMUA sinyal (bukan cuma
+  // yang aktif), jadi semua status di atas bisa muncul di sini.
+  function outcomeBadge(s){
+    if(s.status === "missed"){
+      const [label, cls] = s.missed_reason === "sl_hit_before_entry"
+        ? ["SL DULUAN", "no_signal"]
+        : ["EXPIRED", "no_signal"];
+      return `<span class="badge badge-${cls}" title="${s.missed_reason === 'sl_hit_before_entry' ? 'Harga jeblok ke level stop loss sebelum sempat entry' : 'Habis waktu 3 hari, harga tidak pernah nyentuh level entry'}">${label}</span>`;
+    }
+    const map = {
+      pending: ["RUNNING", "watchlist"],
+      entered: ["RUNNING", "watchlist"],
+      tp_hit: ["TP", "kuat"],
+      sl_hit: ["SL", "no_signal"],
+      closed_timeout: ["TIMEOUT", "no_signal"],
+    };
+    const [label, cls] = map[s.status] || [s.status.toUpperCase(), "no_signal"];
+    return `<span class="badge badge-${cls}">${label}</span>`;
+  }
+
+  function strategyBadge(strategy){
+    const label = strategy === "breakout" ? "BREAKOUT" : strategy === "pullback" ? "PULLBACK" : strategy.toUpperCase();
+    const color = strategy === "breakout" ? "var(--blue)" : "var(--purple)";
+    const warn = strategy === "breakout"
+      ? `<span title="Profit factor jatuh di bawah breakeven (0.93) setelah top-10 ticker outlier dibuang & setelah simulasi slippage 0.50% -- lihat catatan audit robustness. Sedang masa observasi live 3 bulan." style="color:var(--red);cursor:help;margin-left:3px;">&#9888;</span>`
+      : "";
+    return `<span class="mono" style="font-size:10.5px;color:${color};">${label}</span>${warn}`;
+  }
+
+  // ============================================
+  // Paper Trading — simulasi portofolio $ dari trade_signals aktual.
+  // Event-based: proses tiap open/close secara kronologis, cap posisi
+  // konkuren, sizing 10% equity per trade. Lihat konstanta PAPER_* di atas.
+  // ============================================
+  function fmtMoney(v){
+    return "$" + Math.round(v).toLocaleString("en-US");
+  }
+
+  function simulatePaperPortfolioDaily(trades, tradingDates, closeLookup){
+    const taken = trades.filter(t => t.entry_date)
+      .sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date));
+    if(!taken.length || !tradingDates.length) return null;
+
+    const RESOLVED = new Set(["tp_hit", "sl_hit", "closed_timeout"]);
+    const opensByDate = {};
+    const exitsByDate = {};
+    taken.forEach(t => {
+      (opensByDate[t.entry_date] ||= []).push(t);
+      if(RESOLVED.has(t.status) && t.exit_date){
+        (exitsByDate[t.exit_date] ||= []).push(t);
+      }
+    });
+
+    function markValue(p, date){
+      const entry = p.t.entry_price_actual;
+      const closeToday = closeLookup[p.t.ticker] && closeLookup[p.t.ticker][date];
+      if(entry && closeToday) return p.size * (closeToday / entry);
+      return p.size; // fallback kalau harga hari itu nggak ada di daily_features
+    }
+
+    let cash = PAPER_START_CAPITAL;
+    const openPos = []; // {t, size}
+    const curve = []; // equity mark-to-market harian (cash + invested MTM)
+    let notTakenCount = 0;
+    let realizedPnl = 0; // hanya dari posisi yang sudah resolved
+
+    tradingDates.forEach(date => {
+      // proses close dulu, biar kas kepakai lagi buat open di hari yang sama
+      (exitsByDate[date] || []).forEach(t => {
+        const idx = openPos.findIndex(p => p.t === t);
+        if(idx === -1) return;
+        const [pos] = openPos.splice(idx, 1);
+        const pnlDollar = pos.size * ((t.pnl_pct || 0) / 100);
+        cash += pos.size + pnlDollar;
+        realizedPnl += pnlDollar;
+      });
+      (opensByDate[date] || []).forEach(t => {
+        if(openPos.length >= PAPER_MAX_CONCURRENT){ notTakenCount++; return; }
+        const equityNow = cash + openPos.reduce((s, p) => s + markValue(p, date), 0);
+        const size = equityNow * PAPER_SIZE_PCT;
+        if(size > cash){ notTakenCount++; return; }
+        cash -= size;
+        openPos.push({ t, size });
+      });
+      const investedToday = openPos.reduce((s, p) => s + markValue(p, date), 0);
+      // realizedEquity: modal awal + akumulasi PnL yang SUDAH direalisasi sampai
+      // hari ini -- flat di hari-hari tanpa closing, cuma "lompat" pas ada trade
+      // resolve. Beda dari `equity` (MTM) yang bergerak tiap hari ikut floating.
+      curve.push({ date, equity: cash + investedToday, realizedEquity: PAPER_START_CAPITAL + realizedPnl });
+    });
+
+    const lastDate = tradingDates[tradingDates.length - 1];
+    let investedValue = 0, floatingPnl = 0;
+    const openPositions = [];
+    openPos.forEach(p => {
+      const v = markValue(p, lastDate);
+      investedValue += v;
+      floatingPnl += v - p.size;
+      openPositions.push({
+        ticker: p.t.ticker, strategy: p.t.strategy, size: p.size, currentValue: v,
+        entry: p.t.entry_price_actual, stopLoss: p.t.stop_loss, takeProfit: p.t.take_profit,
+        markPrice: p.t.mark_price,
+      });
+    });
+
+    const totalEquity = cash + investedValue;
+
+    return {
+      cash, invested: investedValue, openCount: openPos.length,
+      totalEquity, realizedPnl, floatingPnl,
+      netPnl: totalEquity - PAPER_START_CAPITAL,
+      netPnlPct: (totalEquity / PAPER_START_CAPITAL - 1) * 100,
+      curve, notTakenCount, firstDate: taken[0].entry_date, openPositions
+    };
+  }
+
+  // Max Drawdown -- peak-to-trough dari kurva equity (running peak, cari
+  // penurunan terdalam dari peak itu), plus recovery: hari pertama setelah
+  // trough saat equity balik ke level peak sebelumnya (null kalau belum).
+  function computeMaxDrawdown(curve, valueKey){
+    let peak = -Infinity, peakDateAtPeak = null;
+    let maxDD = 0, troughDate = null, peakAtTrough = null, peakDateAtTrough = null;
+    curve.forEach(p => {
+      const v = p[valueKey];
+      if(v > peak){ peak = v; peakDateAtPeak = p.date; }
+      const dd = (v / peak - 1) * 100;
+      if(dd < maxDD){
+        maxDD = dd; troughDate = p.date; peakAtTrough = peak; peakDateAtTrough = peakDateAtPeak;
+      }
+    });
+    let recoveryDate = null;
+    if(troughDate){
+      const troughIdx = curve.findIndex(p => p.date === troughDate);
+      for(let i = troughIdx + 1; i < curve.length; i++){
+        if(curve[i][valueKey] >= peakAtTrough){ recoveryDate = curve[i].date; break; }
+      }
+    }
+    return { maxDD, peak: peakAtTrough, peakDate: peakDateAtTrough, troughDate, recoveryDate };
+  }
+
+  function renderDrawdown(sim){
+    const body = document.getElementById("drawdownBody");
+    if(!sim || !sim.curve.length){
+      body.innerHTML = `<tr><td colspan="4" style="color:var(--text-dim)">Belum ada data.</td></tr>`;
+      return;
+    }
+    const mtm = computeMaxDrawdown(sim.curve, "equity");
+    const realized = computeMaxDrawdown(sim.curve, "realizedEquity");
+    const rows = [["Mark-to-Market", mtm], ["Realized-only", realized]];
+    body.innerHTML = rows.map(([label, dd]) => {
+      const recoveryText = dd.maxDD === 0 ? "—"
+        : dd.recoveryDate ? `pulih ${dd.recoveryDate}` : "belum pulih";
+      return `<tr>
+        <td>${label}</td>
+        <td class="mono neg">${dd.maxDD.toFixed(2)}%</td>
+        <td class="mono">${fmtMoney(dd.peak)} <span style="color:var(--text-dim);font-size:11px;">(${dd.peakDate || "—"})</span></td>
+        <td class="mono">${recoveryText}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  // ============================================
+  // Exposure Snapshot + Portfolio Heat -- risiko riil dari 30+ posisi aktif
+  // sekarang, bukan cuma "berapa banyak posisi". Semua dihitung dari
+  // openPositions (hasil simulatePaperPortfolioDaily) + harga SL/TP asli.
+  // Nggak ada data sektor/industri di database -- jadi konsentrasi cuma
+  // dihitung per TICKER, bukan per sektor (sesuai keterbatasan data yang ada).
+  // ============================================
+  function computeExposureSnapshot(sim, sectorLookup){
+    if(!sim || !sim.openPositions.length) return null;
+    const positions = sim.openPositions;
+    const n = positions.length;
+
+    let totalRisk = 0, totalReward = 0, sumDistToSL = 0, sumDistToTP = 0;
+    let riskCountAbove5pct = 0;
+    const detail = positions.map(p => {
+      const markOrEntry = p.markPrice != null ? p.markPrice : p.entry;
+      const riskFrac = p.stopLoss != null ? (p.entry - p.stopLoss) / p.entry : 0;
+      const rewardFrac = p.takeProfit != null ? (p.takeProfit - p.entry) / p.entry : 0;
+      const riskDollar = p.size * riskFrac;
+      const rewardDollar = p.size * rewardFrac;
+      const distToSL = p.stopLoss != null ? (markOrEntry - p.stopLoss) / markOrEntry * 100 : null;
+      const distToTP = p.takeProfit != null ? (p.takeProfit - markOrEntry) / markOrEntry * 100 : null;
+      const sector = (sectorLookup && sectorLookup[p.ticker]) || "Lainnya";
+      totalRisk += riskDollar;
+      totalReward += rewardDollar;
+      if(distToSL != null) sumDistToSL += distToSL;
+      if(distToTP != null) sumDistToTP += distToTP;
+      if(riskFrac > 0.05) riskCountAbove5pct++;
+      return { ...p, riskDollar, rewardDollar, distToSL, distToTP, sector };
+    });
+
+    const sortedByValue = [...detail].sort((a, b) => b.currentValue - a.currentValue);
+    const top5 = sortedByValue.slice(0, 5);
+    const largest = sortedByValue[0];
+    const avgAllocation = sim.invested / n;
+
+    // Konsentrasi per sektor -- dari tabel ticker_sector (data Musaffa Q2 2026).
+    const sectorMap = {};
+    detail.forEach(p => {
+      const s = sectorMap[p.sector] || (sectorMap[p.sector] = { sector: p.sector, count: 0, value: 0, risk: 0 });
+      s.count += 1; s.value += p.currentValue; s.risk += p.riskDollar;
+    });
+    const bySector = Object.values(sectorMap).sort((a, b) => b.value - a.value);
+    const largestSector = bySector[0];
+
+    return {
+      openCount: n,
+      totalPositionValue: sim.invested,
+      pctEquityInvested: (sim.invested / sim.totalEquity) * 100,
+      cashAvailable: sim.cash,
+      avgAllocation, largestAllocation: largest ? largest.currentValue : 0, largestTicker: largest ? largest.ticker : "—",
+      totalRisk, riskPctOfEquity: (totalRisk / sim.totalEquity) * 100,
+      riskCountAbove5pct,
+      totalReward, rewardRiskRatio: totalRisk > 0 ? totalReward / totalRisk : null,
+      avgDistToSL: sumDistToSL / n, avgDistToTP: sumDistToTP / n,
+      top5, bySector, largestSector,
+    };
+  }
+
+  function renderExposureSnapshot(exp){
+    const grid = document.getElementById("exposureStatsGrid");
+    const heatNote = document.getElementById("portfolioHeatNote");
+    const top5Body = document.getElementById("exposureTop5Body");
+    const sectorBody = document.getElementById("exposureSectorBody");
+    if(!exp){
+      grid.innerHTML = "";
+      heatNote.innerHTML = "";
+      top5Body.innerHTML = `<tr><td colspan="4" style="color:var(--text-dim)">Belum ada posisi aktif.</td></tr>`;
+      if(sectorBody) sectorBody.innerHTML = `<tr><td colspan="4" style="color:var(--text-dim)">Belum ada posisi aktif.</td></tr>`;
+      return;
+    }
+    const heatCls = exp.riskPctOfEquity >= 40 ? "neg" : exp.riskPctOfEquity >= 20 ? "" : "pos";
+    const sectorPct = exp.largestSector ? (exp.largestSector.value / exp.totalPositionValue * 100) : 0;
+    grid.innerHTML = [
+      ["Posisi Aktif", exp.openCount, `alokasi rata-rata ${fmtMoney(exp.avgAllocation)}`, ""],
+      ["% Equity Invested", exp.pctEquityInvested.toFixed(1) + "%", `kas tersisa ${fmtMoney(exp.cashAvailable)}`, ""],
+      ["Portfolio Heat", exp.riskPctOfEquity.toFixed(1) + "%", `risiko kalau SEMUA kena SL`, heatCls],
+      ["Reward/Risk", exp.rewardRiskRatio != null ? exp.rewardRiskRatio.toFixed(2) + "x" : "—", `total upside ke TP ${fmtMoney(exp.totalReward)}`, ""],
+      ["Sektor Terbesar", exp.largestSector ? exp.largestSector.sector : "—", `${sectorPct.toFixed(1)}% dari total posisi`, ""],
+    ].map(([label, val, sub, cls]) => `
+      <div class="stat-card">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value ${cls}">${val}</div>
+        <div class="stat-sub ${cls}">${sub}</div>
+      </div>`).join("");
+
+    heatNote.innerHTML = `<b>Portfolio Heat</b> = total kerugian potensial (${fmtMoney(exp.totalRisk)}) kalau ` +
+      `SELURUH posisi aktif kena Stop Loss sekaligus, dibagi Total Equity. ${exp.riskCountAbove5pct} dari ` +
+      `${exp.openCount} posisi punya risiko individual &gt;5% (jarak entry ke SL). Rata-rata jarak ke SL ` +
+      `${exp.avgDistToSL.toFixed(1)}%, ke TP ${exp.avgDistToTP.toFixed(1)}% (dari harga terkini). ` +
+      `Alokasi terbesar per ticker: <b>${escapeHtml(exp.largestTicker)}</b> (${fmtMoney(exp.largestAllocation)}).`;
+
+    top5Body.innerHTML = exp.top5.map(p => `
+      <tr>
+        <td class="symbol">${escapeHtml(p.ticker)}</td>
+        <td>${strategyBadge(p.strategy)}</td>
+        <td class="mono">${fmtMoney(p.currentValue)}</td>
+        <td class="mono">${(p.currentValue / exp.totalPositionValue * 100).toFixed(1)}%</td>
+      </tr>`).join("");
+
+    if(sectorBody){
+      sectorBody.innerHTML = exp.bySector.map(s => `
+        <tr>
+          <td>${escapeHtml(s.sector)}</td>
+          <td class="mono">${s.count}</td>
+          <td class="mono">${fmtMoney(s.value)}</td>
+          <td class="mono">${(s.value / exp.totalPositionValue * 100).toFixed(1)}%</td>
+          <td class="mono">${fmtMoney(s.risk)}</td>
+        </tr>`).join("");
+    }
+  }
+
+  function renderPaperStats(sim){
+    const grid = document.getElementById("paperStatsGrid");
+    const note = document.getElementById("paperNote");
+    if(!sim){
+      grid.innerHTML = "";
+      note.textContent = "";
+      return;
+    }
+    const realClass = sim.realizedPnl >= 0 ? "pos" : "neg";
+    const totalClass = sim.netPnl >= 0 ? "pos" : "neg";
+    grid.innerHTML = [
+      ["Trading Balance", fmtMoney(sim.cash), "kas belum terpakai", ""],
+      ["Invested", fmtMoney(sim.invested), `${sim.openCount} posisi terbuka`, ""],
+      ["Open", sim.openCount, "posisi aktif", ""],
+      ["Realized PnL", `${sim.realizedPnl >= 0 ? "+" : ""}${fmtMoney(sim.realizedPnl)}`,
+        "dari trade selesai", realClass],
+      ["Total Equity", fmtMoney(sim.totalEquity),
+        `${sim.netPnlPct >= 0 ? "+" : ""}${sim.netPnlPct.toFixed(2)}% dari modal awal`, totalClass],
+    ].map(([label, val, sub, cls]) => `
+      <div class="stat-card">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value ${cls}">${val}</div>
+        <div class="stat-sub ${cls}">${sub}</div>
+      </div>`).join("");
+
+    note.innerHTML = `Simulasi paper trading, <b>bukan transaksi riil</b> — modal awal ` +
+      `${fmtMoney(PAPER_START_CAPITAL)}, tiap sinyal yang benar-benar dieksekusi (status entered/` +
+      `tp_hit/sl_hit/closed_timeout) diberi porsi ${(PAPER_SIZE_PCT * 100).toFixed(0)}% dari equity ` +
+      `saat entry, maks ${PAPER_MAX_CONCURRENT} posisi terbuka bersamaan.` +
+      (sim.notTakenCount ? ` ${sim.notTakenCount} sinyal dianggap tidak diambil di simulasi ini ` +
+        `karena slot/kas penuh saat itu.` : "");
+  }
+
+  function renderPaperEquityChart(sim){
+    const el = document.getElementById("paperEquityChart");
+    if(!sim || sim.curve.length < 2){
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:12.5px;padding:20px 0;">Belum cukup data untuk ditampilkan.</div>';
+      return;
+    }
+    const curve = sim.curve;
+    const W = 1100, H = 220, pad = 30;
+    const vals = curve.map(p => p.equity);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    const range = (max - min) || 1;
+    const stepX = (W - 2 * pad) / Math.max(1, curve.length - 1);
+    const xy = curve.map((p, i) => [pad + i * stepX, H - pad - ((p.equity - min) / range) * (H - 2 * pad)]);
+    const path = xy.map((p, i) => (i === 0 ? "M" : "L") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+    const last = vals[vals.length - 1];
+    const color = last >= PAPER_START_CAPITAL ? "var(--green)" : "var(--red)";
+
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="220" preserveAspectRatio="none">
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>
+      <circle cx="${xy[xy.length - 1][0]}" cy="${xy[xy.length - 1][1]}" r="3.5" fill="${color}"/>
+    </svg>
+    <div style="display:flex;justify-content:space-between;color:var(--text-dim);font-size:11px;margin-top:4px;">
+      <span>${escapeHtml(curve[0].date)}</span>
+      <span class="mono" style="color:${color}">${fmtMoney(last)}</span>
+      <span>${escapeHtml(curve[curve.length - 1].date)}</span>
+    </div>`;
+  }
+
+  // Return kumulatif KHUSUS posisi yang lagi aktif (status=entered) -- equal-weight
+  // rata-rata %-return tiap posisi dari entry_date-nya masing-masing sampai hari ini.
+  // Posisi baru yang buka belakangan ikut masuk rata-rata mulai dari tanggal dia buka
+  // (mulai dari 0%), BUKAN dari histori realized trade yang sudah closed.
+  function computeActivePositionsReturn(entries, tradingDates, closeLookup){
+    const active = entries.filter(t => t.status === "entered" && t.entry_price_actual);
+    if(!active.length) return null;
+    const startDate = active.reduce((min, t) => t.entry_date < min ? t.entry_date : min, active[0].entry_date);
+    const dates = tradingDates.filter(d => d >= startDate);
+    const curve = dates.map(date => {
+      const live = active.filter(t => t.entry_date <= date);
+      if(!live.length) return null;
+      const rets = live.map(t => {
+        const entry = t.entry_price_actual;
+        const closeToday = closeLookup[t.ticker] && closeLookup[t.ticker][date];
+        const px = closeToday || entry; // fallback flat kalau harga hari itu nggak ada
+        return (px / entry - 1) * 100;
+      });
+      return { date, pct: rets.reduce((a, b) => a + b, 0) / rets.length };
+    }).filter(Boolean);
+    return curve.length ? { curve, startDate } : null;
+  }
+
+  function renderReturnCompareChart(activeReturn, spyRowsFull){
+    const el = document.getElementById("returnCompareChart");
+    if(!activeReturn || activeReturn.curve.length < 2 || !spyRowsFull || spyRowsFull.length < 2){
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:12.5px;padding:20px 0;">Belum cukup data untuk perbandingan.</div>';
+      return;
+    }
+    const portPts = activeReturn.curve;
+    const spyRows = spyRowsFull.filter(r => r.date >= activeReturn.startDate);
+    if(spyRows.length < 2){
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:12.5px;padding:20px 0;">Belum cukup data untuk perbandingan.</div>';
+      return;
+    }
+    const spyBase = spyRows[0].close;
+    const spyPts = spyRows.map(r => ({ date: r.date, pct: (r.close / spyBase - 1) * 100 }));
+
+    const W = 1100, H = 220, pad = 30;
+    const allPct = [...portPts.map(p => p.pct), ...spyPts.map(p => p.pct)];
+    const min = Math.min(0, ...allPct), max = Math.max(0, ...allPct);
+    const range = (max - min) || 1;
+    const t0 = new Date(portPts[0].date).getTime();
+    const t1 = new Date(portPts[portPts.length - 1].date).getTime();
+    const totalT = (t1 - t0) || 1;
+    const xOf = d => pad + ((new Date(d).getTime() - t0) / totalT) * (W - 2 * pad);
+    const yOf = v => H - pad - ((v - min) / range) * (H - 2 * pad);
+    const pathOf = pts => pts.map((p, i) => (i === 0 ? "M" : "L") + xOf(p.date).toFixed(1) + "," + yOf(p.pct).toFixed(1)).join(" ");
+    const zeroY = yOf(0);
+    const portLast = portPts[portPts.length - 1].pct;
+    const spyLast = spyPts[spyPts.length - 1].pct;
+
+    el.innerHTML = `
+      <div style="display:flex;gap:18px;margin-bottom:8px;font-size:12px;">
+        <span><span style="display:inline-block;width:9px;height:9px;background:var(--green);border-radius:2px;margin-right:5px;"></span>Posisi Aktif
+          <b class="mono ${portLast >= 0 ? "pos" : "neg"}">${portLast >= 0 ? "+" : ""}${portLast.toFixed(2)}%</b></span>
+        <span><span style="display:inline-block;width:9px;height:9px;background:var(--purple);border-radius:2px;margin-right:5px;"></span>SPY
+          <b class="mono ${spyLast >= 0 ? "pos" : "neg"}">${spyLast >= 0 ? "+" : ""}${spyLast.toFixed(2)}%</b></span>
+      </div>
+      <svg viewBox="0 0 ${W} ${H}" width="100%" height="220" preserveAspectRatio="none">
+        <line x1="${pad}" y1="${zeroY}" x2="${W - pad}" y2="${zeroY}" stroke="var(--line)" stroke-dasharray="4 3"/>
+        <path d="${pathOf(spyPts)}" fill="none" stroke="var(--purple)" stroke-width="1.6" opacity="0.85"/>
+        <path d="${pathOf(portPts)}" fill="none" stroke="var(--green)" stroke-width="2"/>
+      </svg>
+      <div style="display:flex;justify-content:space-between;color:var(--text-dim);font-size:11px;margin-top:4px;">
+        <span>${escapeHtml(portPts[0].date)}</span>
+        <span>${escapeHtml(portPts[portPts.length - 1].date)}</span>
+      </div>`;
+  }
+
+  // ============================================
+  // Performa sinyal: win rate, profit factor, risk/reward, avg PnL --
+  // dihitung client-side dari trade resolved (tp_hit/sl_hit/closed_timeout),
+  // missed dikeluarkan. Dipecah per strategi karena breakout & pullback
+  // punya karakteristik risiko yang beda jauh (lihat riset backtest).
+  // ============================================
+  function computePerfBreakdown(trades){
+    const RESOLVED = new Set(["tp_hit", "sl_hit", "closed_timeout"]);
+    const resolved = trades.filter(t => RESOLVED.has(t.status) && t.pnl_pct != null);
+
+    function statsFor(list){
+      const n = list.length;
+      if(!n) return null;
+      const wins = list.filter(t => t.pnl_pct > 0);
+      const losses = list.filter(t => t.pnl_pct <= 0);
+      const avgPnl = list.reduce((s, t) => s + t.pnl_pct, 0) / n;
+      const grossWin = wins.reduce((s, t) => s + t.pnl_pct, 0);
+      const grossLoss = Math.abs(losses.reduce((s, t) => s + t.pnl_pct, 0));
+      const profitFactor = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? Infinity : null);
+      const avgWin = wins.length ? grossWin / wins.length : 0;
+      const avgLoss = losses.length ? Math.abs(grossLoss / losses.length) : 0;
+      const riskReward = avgLoss > 0 ? avgWin / avgLoss : null;
+      return { n, winRate: (wins.length / n) * 100, avgPnl, profitFactor, riskReward };
+    }
+
+    return {
+      semua: statsFor(resolved),
+      breakout: statsFor(resolved.filter(t => t.strategy === "breakout")),
+      pullback: statsFor(resolved.filter(t => t.strategy === "pullback")),
+    };
+  }
+
+  function renderPerfBreakdown(breakdown){
+    const body = document.getElementById("perfBreakdownBody");
+    const groups = [["Semua Strategi", breakdown.semua], ["Breakout", breakdown.breakout], ["Pullback", breakdown.pullback]];
+    body.innerHTML = groups.map(([label, st]) => {
+      if(!st){
+        return `<tr><td>${label}</td><td colspan="5" style="color:var(--text-dim)">Belum ada trade resolved.</td></tr>`;
+      }
+      const pfText = st.profitFactor === Infinity ? "&#8734;" : (st.profitFactor != null ? st.profitFactor.toFixed(2) : "—");
+      const rrText = st.riskReward != null ? st.riskReward.toFixed(2) : "—";
+      const pnlCls = st.avgPnl >= 0 ? "pos" : "neg";
+      return `<tr>
+        <td>${label}</td>
+        <td class="mono">${st.n}</td>
+        <td class="mono">${st.winRate.toFixed(1)}%</td>
+        <td class="mono">${pfText}</td>
+        <td class="mono">${rrText}</td>
+        <td class="mono ${pnlCls}">${st.avgPnl >= 0 ? "+" : ""}${st.avgPnl.toFixed(2)}%</td>
+      </tr>`;
+    }).join("");
+  }
+
+
+  function tierOf(r){ return (r.decision && r.decision.tier) || "no_signal"; }
+
+  function render(){
+    const kuat = rows.filter(r => tierOf(r) === "kuat");
+    const watchlist = rows.filter(r => tierOf(r) === "watchlist");
+    const noSignal = rows.filter(r => tierOf(r) === "no_signal");
+    const avgScoreKuat = kuat.length ? (kuat.reduce((s,r)=>s+r.score,0)/kuat.length).toFixed(1) : "—";
+
+    document.getElementById("statsGrid").innerHTML = [
+      ["Universe", rows.length, "(gabungan semua strategi)"],
+      ["Update Terakhir", rows[0].date, ""],
+      ["Kuat", kuat.length, "score =100"],
+      ["Watchlist", watchlist.length, "score 40-99"],
+      ["No Signal", noSignal.length, "score <40"],
+      ["Avg Score (Kuat)", avgScoreKuat, ""],
+    ].map(([label,val,sub]) => `
+      <div class="stat-card">
+        <div class="stat-label">${label}</div>
+        <div class="stat-value">${val}</div>
+        <div class="stat-sub">${sub}</div>
+      </div>`).join("");
+
+    document.getElementById("count-kuat").textContent = kuat.length;
+    document.getElementById("count-watchlist").textContent = watchlist.length;
+    document.getElementById("count-all").textContent = rows.length;
+
+    renderTable();
+  }
+
+  function renderTable(){
+    let filtered = rows;
+    filtered = activeTier === "all" ? filtered : filtered.filter(r => tierOf(r) === activeTier);
+    if(searchTerm){
+      filtered = filtered.filter(r => r.ticker.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+
+    document.getElementById("rowCount").textContent = `${filtered.length} ticker`;
+
+    if(filtered.length === 0){
+      document.getElementById("tableBody").innerHTML =
+        `<tr><td colspan="10" style="text-align:center;color:var(--text-dim);padding:30px;">Tidak ada ticker di kategori ini.</td></tr>`;
+      return;
+    }
+
+    document.getElementById("tableBody").innerHTML = filtered.map((r) => {
+      const tier = tierOf(r);
+      const dist = r.dist_ma20_pct, rs = r.relative_strength_spy;
+      const signals = Array.isArray(r.signals) ? r.signals : [];
+      const origIdx = rows.indexOf(r);
+      return `
+        <tr onclick="openModal(${origIdx})">
+          <td class="symbol">${escapeHtml(r.ticker)}</td>
+          <td>${strategyBadge(r.strategy)}</td>
+          <td class="mono">${r.score}</td>
+          <td><span class="badge badge-${tier}">${tierLabel(tier)}</span></td>
+          <td class="mono">${fmt(r.close)}</td>
+          <td class="mono">${fmt(r.rsi14)}</td>
+          <td class="mono ${dist>=0?'pos':'neg'}">${fmt(dist)}%</td>
+          <td class="mono">${fmt(r.relative_volume)}x</td>
+          <td class="mono ${rs>=0?'pos':'neg'}">${fmt(rs)}%</td>
+          <td>${signals.map(s => `<span class="sig-chip">${escapeHtml(s)}</span>`).join("")}</td>
+        </tr>`;
+    }).join("");
+  }
+
+  function tierLabel(tier){
+    return { kuat: "KUAT", watchlist: "WATCHLIST", no_signal: "NO SIGNAL" }[tier] || tier;
+  }
+
+  function fieldHtml(k, v){ return v==null||v==="" ? "" : `<div class="field"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+
+  function openModal(idx){
+    const r = rows[idx];
+    const d = r.decision || {};
+    let html = `<div class="modal-head"><h3 class="symbol">${escapeHtml(r.ticker)} <span class="badge badge-${tierOf(r)}">${tierLabel(tierOf(r))}</span></h3><span class="x" onclick="closeModal()">&times;</span></div>`;
+    html += `<div class="modal-sub">${escapeHtml(r.date)} &middot; strategi: ${escapeHtml(r.strategy || 'breakout')}</div>`;
+
+    html += `<div class="section-h">Ringkasan Skor</div><div class="field-grid">`;
+    html += fieldHtml("Score", r.score);
+    html += fieldHtml("Trend", d.trend);
+    if(d.distance_ma20_pct != null) html += fieldHtml("Jarak MA20", fmt(d.distance_ma20_pct) + "%");
+    if(d.entry_price_ref != null) html += fieldHtml("Entry Ref (MA20)", fmt(d.entry_price_ref));
+    if(d.stop_loss_ref != null) html += fieldHtml("Stop Loss Ref", fmt(d.stop_loss_ref));
+    if(d.take_profit_ref != null) html += fieldHtml("Take Profit Ref", fmt(d.take_profit_ref));
+    html += `</div>`;
+
+    html += `<div class="section-h">Harga &amp; Indikator</div><div class="field-grid">`;
+    html += fieldHtml("Close", fmt(r.close));
+    html += fieldHtml("MA20 / MA50 / MA200", `${fmt(r.ma20)} / ${fmt(r.ma50)} / ${fmt(r.ma200)}`);
+    html += fieldHtml("RSI14", fmt(r.rsi14));
+    html += fieldHtml("ATR14 %", fmt(r.atr14_pct) + "%");
+    html += fieldHtml("Rel. Volume", fmt(r.relative_volume) + "x");
+    html += fieldHtml("RS vs SPY (20d)", fmt(r.relative_strength_spy) + "%");
+    html += fieldHtml("Ref. Stop (ATR)", d.atr_stop != null ? fmt(d.atr_stop) : null);
+    html += `</div>`;
+
+    const signals = Array.isArray(r.signals) ? r.signals : [];
+    if(signals.length){
+      html += `<div class="section-h">Sinyal Terpenuhi</div><div>${signals.map(s => `<span class="sig-chip">${escapeHtml(s)}</span>`).join("")}</div>`;
+    }
+
+    document.getElementById("modalContent").innerHTML = html;
+    document.getElementById("modalOverlay").classList.add("show");
+  }
+  function closeModal(){ document.getElementById("modalOverlay").classList.remove("show"); }
+  document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+
+  // Modal detail buat baris di tabel Sinyal -- nunjukkin hasil trade
+  // (trigger/entry/SL/TP/outcome/PnL) SEKALIGUS kondisi market pas sinyal
+  // itu muncul (snapshot_* dari daily_features+strategy_results, join lewat
+  // trade_signals_full_v). Ini yang dipakai buat tuning: liat "sinyal
+  // aslinya bagaimana", bukan cuma hasil akhirnya.
+  function openSignalModal(idx){
+    const s = signalRows[idx];
+    const pnlDisplay = pnlDisplayFor(s);
+    let html = `<div class="modal-head"><h3 class="symbol">${escapeHtml(s.ticker)} ${strategyBadge(s.strategy)}</h3><span class="x" onclick="closeModal()">&times;</span></div>`;
+    html += `<div class="modal-sub">${escapeHtml(s.signal_date)} &middot; ${outcomeBadge(s)}</div>`;
+
+    html += `<div class="section-h">Trade</div><div class="field-grid">`;
+    html += fieldHtml("Trigger", fmt(s.entry_price));
+    html += fieldHtml("Entry", s.entry_price_actual != null ? fmt(s.entry_price_actual) : "Belum entry");
+    html += fieldHtml("Stop Loss", fmt(s.stop_loss));
+    html += fieldHtml("Take Profit", fmt(s.take_profit));
+    html += fieldHtml("Low / High selama jalan", `${fmt(s.lowest_price)} / ${fmt(s.highest_price)}`);
+    html += fieldHtml("Mark / Exit", markExitDisplay(s));
+    html += fieldHtml("PnL", pnlDisplay.text);
+    html += fieldHtml(s.status === "pending" || s.status === "entered" ? "Hari Berjalan" : "Hari Ditahan",
+      (s.days_in_status ?? 0) + "d (trading day)");
+    if(s.missed_reason) html += fieldHtml("Alasan Gagal", s.missed_reason === "sl_hit_before_entry" ? "SL sebelum sempat entry" : "Habis waktu (expired)");
+    html += `</div>`;
+
+    html += `<div class="section-h">Kondisi Market Saat Sinyal Muncul</div><div class="field-grid">`;
+    html += fieldHtml("Score / Tier", s.snapshot_score != null ? `${s.snapshot_score} (${s.snapshot_tier || "—"})` : null);
+    html += fieldHtml("Close", fmt(s.snapshot_close));
+    html += fieldHtml("RSI14", fmt(s.snapshot_rsi14));
+    html += fieldHtml("ATR14 %", s.snapshot_atr14_pct != null ? fmt(s.snapshot_atr14_pct) + "%" : null);
+    html += fieldHtml("Jarak MA20", s.snapshot_dist_ma20_pct != null ? fmt(s.snapshot_dist_ma20_pct) + "%" : null);
+    html += fieldHtml("Rel. Volume", s.snapshot_relative_volume != null ? fmt(s.snapshot_relative_volume) + "x" : null);
+    html += fieldHtml("RS vs SPY", s.snapshot_rs_vs_spy != null ? fmt(s.snapshot_rs_vs_spy) + "%" : null);
+    html += `</div>`;
+
+    const snapSignals = Array.isArray(s.snapshot_signals) ? s.snapshot_signals : [];
+    if(snapSignals.length){
+      html += `<div class="section-h">Sinyal Terpenuhi</div><div>${snapSignals.map(sig => `<span class="sig-chip">${escapeHtml(sig)}</span>`).join("")}</div>`;
+    }
+
+    document.getElementById("modalContent").innerHTML = html;
+    document.getElementById("modalOverlay").classList.add("show");
+  }
+
+  function fmt(n){ return (n === null || n === undefined) ? "—" : Number(n).toFixed(2); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  function buildTradesFilterParams(){
+    const st = curTab();
+    let params = "";
+    if(st.filterType !== "all") params += `&strategy=eq.${st.filterType}`;
+    if(activeMainTab === "posisi"){
+      params += `&status=in.(pending,entered)`;
+    }else if(activeMainTab === "riwayat"){
+      params += st.filterStatus === "resolved_only"
+        ? `&status=in.(tp_hit,sl_hit,closed_timeout)`
+        : `&status=eq.${st.filterStatus}`;
+    }
+    if(st.searchTerm) params += `&ticker=ilike.*${encodeURIComponent(st.searchTerm)}*`;
+    return params;
+  }
+
+  // Download SEMUA sinyal yang cocok filter aktif (bukan cuma halaman yang
+  // lagi kebuka) -- fetch terpisah, capped 2000 baris biar wajar.
+  async function downloadTradesCSV(){
+    let data;
+    try{
+      data = await sbFetch(
+        `trade_signals_full_v?select=*&order=signal_date.desc,id.desc&limit=2000${buildTradesFilterParams()}`
+      );
+    }catch(e){
+      alert("Gagal ambil data buat CSV: " + e.message);
+      return;
+    }
+    if(!data.length){ alert("Tidak ada data buat di-export."); return; }
+
+    const cols = ["signal_date","ticker","strategy","entry_price","entry_price_actual","entry_date",
+                  "stop_loss","take_profit","lowest_price","highest_price","status","missed_reason",
+                  "mark_price","exit_price","exit_date","pnl_pct","floating_pnl_pct",
+                  "snapshot_score","snapshot_tier","snapshot_close","snapshot_rsi14","snapshot_atr14_pct",
+                  "snapshot_dist_ma20_pct","snapshot_relative_volume","snapshot_rs_vs_spy","snapshot_signals"];
+    const csvLines = [cols.join(",")];
+    for(const row of data){
+      // floating_pnl_pct bukan kolom asli di database -- dihitung sama persis
+      // kayak kolom Floating PnL di tabel Posisi Aktif, cuma buat baris entered
+      // (yang resolved sudah punya pnl_pct asli, nggak perlu dihitung ulang).
+      const floatingPnl = (row.status === "entered" && row.mark_price != null && row.entry_price_actual != null)
+        ? (row.mark_price - row.entry_price_actual) / row.entry_price_actual * 100
+        : null;
+      const rowWithFloating = { ...row, floating_pnl_pct: floatingPnl != null ? floatingPnl.toFixed(2) : null };
+      csvLines.push(cols.map(c => {
+        let v = rowWithFloating[c];
+        if(v == null) return "";
+        if(Array.isArray(v)) v = v.join(" | "); // snapshot_signals -- array jadi "Trend Bullish | Pullback ke MA20"
+        const s = String(v);
+        return s.includes(",") ? `"${s}"` : s;
+      }).join(","));
+    }
+    const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `us_swing_${activeMainTab}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function manualRefresh(){
+    const btn = document.getElementById("refreshBtn");
+    if(btn){ btn.disabled = true; btn.textContent = "Memuat…"; }
+    tabState.posisi.page = 1;
+    tabState.riwayat.page = 1;
+    Promise.all([loadData()]).finally(() => {
+      if(btn){ btn.disabled = false; btn.innerHTML = "&#8635; Refresh"; }
+    });
+  }
+
+  document.querySelectorAll("#mainTabs .tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelector("#mainTabs .tab.active").classList.remove("active");
+      tab.classList.add("active");
+      activeTier = tab.dataset.tier;
+      renderTable();
+    });
+  });
+  function populateStatusDropdown(){
+    const wrap = document.getElementById("filterStatusWrap");
+    const sel = document.getElementById("filterStatus");
+    if(activeMainTab !== "riwayat"){
+      wrap.style.display = "none";
+      return;
+    }
+    wrap.style.display = "";
+    sel.innerHTML = STATUS_OPTIONS_RIWAYAT.map(([v, label]) =>
+      `<option value="${v}">${escapeHtml(label)}</option>`).join("");
+    sel.value = curTab().filterStatus;
+  }
+
+  // Sinkronkan input search & dropdown strategi ke state tab yang lagi aktif --
+  // biar nggak kelihatan kayak "nyambung" pas pindah tab (state-nya beda,
+  // tapi kalau UI-nya nggak di-refresh, terlihat kebawa dari tab sebelumnya).
+  function syncFilterUIToTab(){
+    const st = curTab();
+    document.getElementById("searchSymbol").value = st.searchTerm;
+    document.getElementById("filterType").value = st.filterType;
+  }
+
+  document.querySelectorAll("#viewToggle .tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelector("#viewToggle .tab.active").classList.remove("active");
+      tab.classList.add("active");
+      const view = tab.dataset.view;
+      activeMainTab = view;
+      document.getElementById("tab-trades").style.display = view === "snapshot" ? "none" : "block";
+      document.getElementById("viewSnapshot").style.display = view === "snapshot" ? "block" : "none";
+      document.getElementById("posisiExtras").style.display = view === "posisi" ? "block" : "none";
+      document.getElementById("riwayatExtras").style.display = view === "riwayat" ? "block" : "none";
+      if(view !== "snapshot"){
+        populateStatusDropdown();
+        syncFilterUIToTab();
+        loadSignalsPage();
+      }
+    });
+  });
+
+  // Filter tabel Screening Snapshot
+  document.getElementById("searchSymbolSnapshot").addEventListener("input", e => {
+    searchTerm = e.target.value;
+    renderTable();
+  });
+
+  // Filter tabel Posisi Aktif / Riwayat -- server-side, state per-tab
+  // (curTab()), reset ke halaman 1 tiap ganti filter/sort/search.
+  document.getElementById("searchSymbol").addEventListener("input", e => {
+    const st = curTab();
+    st.searchTerm = e.target.value;
+    st.page = 1;
+    loadSignalsPage();
+  });
+  document.getElementById("filterType").addEventListener("change", e => {
+    const st = curTab();
+    st.filterType = e.target.value;
+    st.page = 1;
+    loadSignalsPage();
+  });
+  document.getElementById("filterStatus").addEventListener("change", e => {
+    const st = curTab();
+    st.filterStatus = e.target.value;
+    st.page = 1;
+    loadSignalsPage();
+  });
+
+  populateStatusDropdown(); // set kondisi awal (tab default = posisi -> dropdown hidden)
+
+  loadData();
+</script>
+</body>
+</html>
+<!--
+CHANGELOG (versi terakhir saja, tanpa tanggal -- Claude nggak reliable soal waktu real-time)
+v3.10
+- Kolom Exit di tab Riwayat: hapus label "TP @"/"SL @", tinggal angka
+  harga exit-nya aja (kolom Outcome di sebelahnya udah nunjukkin
+  TP/SL/Timeout, jadi label ini cuma dobel info).
+-->
