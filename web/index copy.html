@@ -118,8 +118,6 @@
 
   .badge{ font-size:10.5px; font-weight:600; padding:2px 7px; border-radius:10px; letter-spacing:.02em; white-space:nowrap; }
   .badge-kuat{ background:rgba(70,180,120,.15); color:var(--green); }
-  .badge-kuat-dalam{ background:rgba(70,180,120,.28); color:var(--green); font-weight:700; }
-  .badge-kuat-dangkal{ background:rgba(70,180,120,.08); color:var(--green); opacity:.8; }
   .badge-watchlist{ background:rgba(79,140,255,.15); color:var(--blue); }
   .badge-no_signal{ background:rgba(137,147,163,.12); color:var(--text-dim); }
   .sig-chip{
@@ -291,12 +289,6 @@
         zona pullback) — berbeda dari breakout, kombinasi ini SUDAH divalidasi terpisah dan tetap
         lolos ambang (win rate 49.4%, profit factor 1.18 setelah outlier dibuang), meski lebih lemah
         dari tier Kuat. Hanya tier Kuat yang menghasilkan sinyal entry/SL/TP aktual.
-        <b>Update:</b> tier Kuat pullback sekarang pecah jadi <b>Kuat Dalam</b> (dist_ma20_pct &lt; -0.48%,
-        pullback lebih dalam relatif ke MA20) vs <b>Kuat Dangkal</b> — dist_ma20_pct rendah terbukti
-        profit factor lebih tinggi (p=0.0006, tervalidasi out-of-sample), TAPI cuma robust di bull
-        regime (SPY di atas MA200); di luar bull arahnya belum terbukti (malah kebalik di bear), jadi
-        tetap dilabeli "Kuat" polos di kondisi itu. Skor & sinyal entry/SL/TP tidak berubah oleh
-        sub-tier ini — cuma label prioritas.
         <b>Status: masa observasi live 3 bulan</b> — kriteria kedua strategi sengaja tidak diubah
         dulu, biar hasil live jadi validasi out-of-sample yang jujur. <span style="color:var(--red)">&#9888; Breakout</span>
         diketahui fragile: profit factor jatuh di bawah breakeven begitu outlier ticker dibuang atau
@@ -1214,7 +1206,7 @@
   function tierOf(r){ return (r.decision && r.decision.tier) || "no_signal"; }
 
   function render(){
-    const kuat = rows.filter(r => tierOf(r).startsWith("kuat"));
+    const kuat = rows.filter(r => tierOf(r) === "kuat");
     const watchlist = rows.filter(r => tierOf(r) === "watchlist");
     const noSignal = rows.filter(r => tierOf(r) === "no_signal");
     const avgScoreKuat = kuat.length ? (kuat.reduce((s,r)=>s+r.score,0)/kuat.length).toFixed(1) : "—";
@@ -1242,9 +1234,7 @@
 
   function renderTable(){
     let filtered = rows;
-    filtered = activeTier === "all" ? filtered
-      : activeTier === "kuat" ? filtered.filter(r => tierOf(r).startsWith("kuat"))
-      : filtered.filter(r => tierOf(r) === activeTier);
+    filtered = activeTier === "all" ? filtered : filtered.filter(r => tierOf(r) === activeTier);
     if(searchTerm){
       filtered = filtered.filter(r => r.ticker.toLowerCase().includes(searchTerm.toLowerCase()));
     }
@@ -1279,7 +1269,7 @@
   }
 
   function tierLabel(tier){
-    return { kuat: "KUAT", "kuat-dalam": "KUAT DALAM", "kuat-dangkal": "KUAT DANGKAL", watchlist: "WATCHLIST", no_signal: "NO SIGNAL" }[tier] || tier;
+    return { kuat: "KUAT", watchlist: "WATCHLIST", no_signal: "NO SIGNAL" }[tier] || tier;
   }
 
   function fieldHtml(k, v){ return v==null||v==="" ? "" : `<div class="field"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
@@ -1293,7 +1283,6 @@
     html += `<div class="section-h">Ringkasan Skor</div><div class="field-grid">`;
     html += fieldHtml("Score", r.score);
     html += fieldHtml("Trend", d.trend);
-    if(d.market_regime != null) html += fieldHtml("Market Regime", d.market_regime === "bull" ? "Bull (SPY &gt; MA200)" : "Non-Bull");
     if(d.distance_ma20_pct != null) html += fieldHtml("Jarak MA20", fmt(d.distance_ma20_pct) + "%");
     if(d.entry_price_ref != null) html += fieldHtml("Entry Ref (MA20)", fmt(d.entry_price_ref));
     if(d.stop_loss_ref != null) html += fieldHtml("Stop Loss Ref", fmt(d.stop_loss_ref));

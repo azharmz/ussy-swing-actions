@@ -17,8 +17,20 @@ Kriteria final berdasarkan 2 backtest breakdown (3 tahun, 197 ticker):
 RR_RATIO = 2
 ATR_MULTIPLIER_SL = 2
 
+# H2 (reverse-engineering backtest 2018-2026, n=8.382 trade pullback): dist_ma20_pct
+# rendah saat sinyal -> PF lebih tinggi (p=0.0006, lolos Bonferroni, replikasi di
+# test). TAPI regime-conditional -- robust & signifikan di bull (90% sample, tahan
+# sampai ex-top20), arah TERBALIK di bear (sample kecil), tidak signifikan di
+# sideways. Threshold FIXED dari median backtest historis (bukan dihitung ulang
+# dari kondisi live) supaya persis kriteria yang divalidasi, bukan definisi baru
+# yang belum diuji.
+DIST_MA20_THRESHOLD = -0.48
 
-def run_pullback(features):
+
+def run_pullback(features, market_regime="non_bull"):
+    """market_regime: "bull" (SPY Close > MA200) atau "non_bull" (selain itu).
+    Dipakai buat gate confidence sub-tier dist_ma20 -- di luar bull, arah H2
+    belum terbukti (malah kebalik di bear), jadi jangan diklaim dalam/dangkal."""
     trend_ok = features["close"] > features["ma50"] > features["ma200"]
     momentum_ok = 40 <= features["rsi14"] <= 55
 
@@ -29,7 +41,16 @@ def run_pullback(features):
         signals.append("Pullback ke MA20")
 
     if trend_ok and momentum_ok:
-        score, tier = 100, "kuat"
+        score = 100
+        if market_regime == "bull":
+            if features["dist_ma20_pct"] < DIST_MA20_THRESHOLD:
+                tier = "kuat-dalam"
+                signals.append("Pullback dalam (dist_ma20 rendah)")
+            else:
+                tier = "kuat-dangkal"
+        else:
+            # Regime bukan bull -> H2 belum tervalidasi di sini, jangan bedain.
+            tier = "kuat"
     elif trend_ok:
         score, tier = 50, "watchlist"
     else:
@@ -50,6 +71,8 @@ def run_pullback(features):
         "decision": {
             "tier": tier,
             "trend": "Strong" if features["close"] > features["ma200"] else "Weak",
+            "market_regime": market_regime,
+            "distance_ma20_pct": features["dist_ma20_pct"],
             "entry_price_ref": entry_price,
             "stop_loss_ref": stop_loss,
             "take_profit_ref": take_profit,

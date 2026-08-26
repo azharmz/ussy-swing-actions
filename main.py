@@ -1,5 +1,7 @@
 import csv
 
+import pandas as pd
+
 from fetch import fetch_prices
 from feature_engine import compute_features
 from strategy_breakout import run_breakout
@@ -56,6 +58,21 @@ def main():
         print("WARNING: SPY gagal dihitung fiturnya (data <200 hari?), "
               "benchmark chart di frontend nggak akan ke-update hari ini.")
 
+    # Regime flag sederhana (SPY Close vs MA200) -- reuse MA200 yang sudah
+    # dihitung compute_features() di atas (mutasi in-place ke spy_df), bukan
+    # dihitung ulang. Dipakai buat gate confidence sub-tier dist_ma20 pullback
+    # (H2 cuma tervalidasi & robust di bull regime, riset Notebook 3 -- di
+    # bear arahnya kebalik, di sideways tidak signifikan). Default konservatif
+    # "non_bull" kalau MA200 belum kehitung (data kurang).
+    if "MA200" in spy_df.columns and pd.notna(spy_df["MA200"].iloc[-1]):
+        spy_close_today = float(spy_df["Close"].iloc[-1])
+        spy_ma200_today = float(spy_df["MA200"].iloc[-1])
+        market_regime = "bull" if spy_close_today > spy_ma200_today else "non_bull"
+        print(f"Market regime hari ini: {market_regime} (SPY {spy_close_today:.2f} vs MA200 {spy_ma200_today:.2f})")
+    else:
+        market_regime = "non_bull"
+        print("Market regime: MA200 SPY belum kehitung (data <200 hari?), default non_bull (konservatif)")
+
     for ticker in UNIVERSE:
         if ticker not in price_data:
             continue
@@ -64,7 +81,7 @@ def main():
             continue
         feature_rows.append(feat)
         strategy_rows.append(run_breakout(feat))
-        strategy_rows.append(run_pullback(feat))
+        strategy_rows.append(run_pullback(feat, market_regime))
 
     print(f"Berhasil proses {len(feature_rows)}/{len(UNIVERSE) + 1} ticker (termasuk SPY)")
 
@@ -75,13 +92,15 @@ def main():
 
     new_signals = process_signals(supabase, price_data, strategy_rows)
 
-    msg = format_new_signals_message(new_signals)
+    msg = format_new_signals_message(new_signals, strategy_rows)
     if msg:
         send_telegram_message(msg)
 
     for strategy_name in ("breakout", "pullback"):
         rows_s = [r for r in strategy_rows if r["strategy"] == strategy_name]
-        kuat = [r for r in rows_s if r["decision"]["tier"] == "kuat"]
+        # startswith("kuat") biar "kuat", "kuat-dalam", "kuat-dangkal" kehitung semua
+        # sebagai "sinyal kuat" di ringkasan -- cuma soal sub-tier, bukan beda level.
+        kuat = [r for r in rows_s if r["decision"]["tier"].startswith("kuat")]
         print(f"{strategy_name}: {len(kuat)} sinyal kuat dari {len(rows_s)} ticker")
 
     # Kalau proses jauh lebih sedikit dari universe, kemungkinan ada masalah

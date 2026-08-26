@@ -30,9 +30,20 @@ def send_telegram_message(text):
         print(f"Error kirim Telegram: {e}")
 
 
-def format_new_signals_message(new_signals):
+def format_new_signals_message(new_signals, strategy_rows=None):
+    """strategy_rows opsional -- kalau ada, dipakai buat label tier (misal
+    "kuat-dalam"/"kuat-dangkal" pullback) di pesan. Lookup dari strategy_rows
+    (sudah di memory saat run yang sama), BUKAN kolom baru di trade_signals --
+    tabel itu sengaja tidak diubah skemanya untuk fitur ini. Tier lengkap tetap
+    bisa dicek belakangan lewat trade_signals_full_v.snapshot_tier (join ke
+    strategy_results, sudah ada dari awal)."""
     if not new_signals:
         return None
+
+    tier_lookup = {}
+    if strategy_rows:
+        for r in strategy_rows:
+            tier_lookup[(r["ticker"], r["strategy"])] = r["decision"].get("tier")
 
     by_strategy = {}
     for s in new_signals:
@@ -42,8 +53,10 @@ def format_new_signals_message(new_signals):
     for strategy, sigs in by_strategy.items():
         lines.append(f"_Strategi: {strategy.upper()}_")
         for s in sigs:
+            tier = tier_lookup.get((s["ticker"], s["strategy"]))
+            tier_label = f" [{tier}]" if tier and tier != "kuat" else ""
             lines.append(
-                f"*{s['ticker']}*\n"
+                f"*{s['ticker']}*{tier_label}\n"
                 f"Entry: `{s['entry_price']}`  SL: `{s['stop_loss']}`  TP: `{s['take_profit']}`"
             )
         lines.append("")
