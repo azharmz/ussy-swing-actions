@@ -541,7 +541,7 @@
 
       try{
         const allTrades = await sbFetch(
-          "trade_signals?select=ticker,strategy,status,entry_date,exit_date,entry_price_actual,exit_price,mark_price,pnl_pct,stop_loss,take_profit" +
+          "trade_signals_full_v?select=ticker,strategy,status,entry_date,exit_date,entry_price_actual,exit_price,mark_price,pnl_pct,stop_loss,take_profit,snapshot_tier" +
           "&status=in.(entered,tp_hit,sl_hit,closed_timeout)&order=entry_date.asc&limit=2000"
         );
         const takenTrades = allTrades.filter(t => t.entry_date);
@@ -861,7 +861,7 @@
       investedValue += v;
       floatingPnl += v - p.size;
       openPositions.push({
-        ticker: p.t.ticker, strategy: p.t.strategy, size: p.size, currentValue: v,
+        ticker: p.t.ticker, strategy: p.t.strategy, tier: p.t.snapshot_tier, size: p.size, currentValue: v,
         entry: p.t.entry_price_actual, stopLoss: p.t.stop_loss, takeProfit: p.t.take_profit,
         markPrice: p.t.mark_price,
       });
@@ -1018,7 +1018,7 @@
     top5Body.innerHTML = exp.top5.map(p => `
       <tr>
         <td class="symbol">${escapeHtml(p.ticker)}</td>
-        <td>${strategyBadge(p.strategy)}</td>
+        <td>${strategyBadge(p.strategy, p.tier)}</td>
         <td class="mono">${fmtMoney(p.currentValue)}</td>
         <td class="mono">${(p.currentValue / exp.totalPositionValue * 100).toFixed(1)}%</td>
       </tr>`).join("");
@@ -1531,16 +1531,20 @@
 </html>
 <!--
 CHANGELOG (versi terakhir saja, tanpa tanggal -- Claude nggak reliable soal waktu real-time)
-v3.12
-- strategyBadge() sekarang terima param tier: kolom Strategi di tabel
-  Posisi Aktif & Riwayat (sebelumnya cuma tampil di tab Screening) ikut
+v3.13 -- rangkuman fitur sub-tier dist_ma20 pullback (v3.11-v3.13)
+- Sub-tier baru khusus pullback: "kuat-dalam"/"kuat-dangkal" (dari kriteria
+  dist_ma20_pct, cuma aktif saat market_regime="bull" -- di luar itu tetap
+  label "kuat" polos). Skor/entry/SL/TP tidak berubah, cuma label prioritas.
+- strategyBadge() terima param tier: kolom Strategi di SEMUA tempat
+  (Screening, Posisi Aktif, Riwayat, Top 5 Konsentrasi) sekarang konsisten
   nampilin sub-label kecil "DALAM"/"DANGKAL" di sebelah label PULLBACK,
-  warna beda (hijau vs abu-abu dim) + tooltip penjelasan. Dipanggil pakai
-  snapshot_tier dari trade_signals_full_v (sudah ke-fetch dari awal via
-  select=*, cuma belum dipakai).
-- (v3.11) Sub-tier baru khusus pullback: "kuat-dalam"/"kuat-dangkal" (dari
-  kriteria dist_ma20_pct, cuma aktif saat market_regime="bull" -- di luar
-  itu tetap label "kuat" polos). Badge CSS baru, fix filter tab/stat card
-  "Kuat" (exact-match -> startsWith), tierLabel(), field Market Regime di
-  modal, teks penjelasan tab Snapshot.
+  warna beda (hijau vs abu-abu dim) + tooltip penjelasan. Panel Top 5
+  Konsentrasi butuh query sumbernya (allTrades) dipindah dari trade_signals
+  ke trade_signals_full_v (nambah kolom snapshot_tier) supaya datanya ada.
+- Fix bug: tab "Kuat" & stat card "Kuat" tadinya exact-match tier==="kuat",
+  jadi bakal nge-filter HILANG sinyal pullback yg tag-nya kuat-dalam/
+  kuat-dangkal. Diganti startsWith("kuat").
+- tierLabel() ditambah "KUAT DALAM"/"KUAT DANGKAL". Badge CSS baru.
+- Modal detail ditambah field "Market Regime" (Bull/Non-Bull).
+- Teks penjelasan tab Snapshot diupdate soal sub-tier baru ini.
 -->
