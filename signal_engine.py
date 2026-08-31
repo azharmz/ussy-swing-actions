@@ -45,6 +45,12 @@ sudah benar dari awal). Efeknya: days_in_status yang tersimpan buat baris
 yang sudah resolved/missed sekarang akurat sampai hari terakhir, bukan
 ketinggalan 1 hari. Nggak ngubah threshold ENTRY_WINDOW_DAYS/
 HOLDING_PERIOD_DAYS itu sendiri, cuma ngebenerin apa yang KE-SIMPAN.
+
+CATATAN (v4): lifecycle menyimpan last_processed_date. Rerun pada candle yang
+sama sekarang idempotent, dan kalau job harian gagal maka semua candle yang
+terlewat diproses berurutan pada run berikutnya. Candle pending yang menyentuh
+entry+SL sekaligus dihitung konservatif sebagai trade sl_hit (bukan dikeluarkan
+dari performa sebagai missed), dan stop yang di-gap memakai min(Open, stop).
 """
 import pandas as pd
 
@@ -109,10 +115,150 @@ def _safe_update(supabase, sig, payload, context):
         return False
     try:
         supabase.table("trade_signals").update(payload).eq("id", sig["id"]).execute()
+        # Keep the in-memory state in sync. This matters when a failed/delayed
+        # workflow has more than one unprocessed candle to replay in one run.
+        sig.update(payload)
         return True
     except Exception as e:
         print(f"  [signal] GAGAL update {context} (id={sig.get('id')}): {e}")
         return False
+
+
+def _bars_after(df, last_processed_date):
+    """Return unprocessed bars in chronological order.
+
+    last_processed_date is persisted per signal, making manual reruns on the
+    same market date idempotent and allowing a later run to replay candles
+    missed by a failed GitHub Actions job.
+    """
+    if last_processed_date:
+        return df[df.index.date > pd.Timestamp(last_processed_date).date()]
+    return df
+
+
+def _gap_aware_stop_price(today, stop_loss):
+    """A sell-stop cannot fill above the open after a gap through the stop."""
+    return round(min(float(today["Open"]), float(stop_loss)), 2)
+
+
+def _process_signal_bar(supabase, sig, today, today_date, direction, context):
+    """Process exactly one previously unseen OHLC bar.
+
+    Returns False when persistence fails; the caller must then stop replaying
+    later bars so lifecycle events cannot be applied out of order.
+    """
+    new_low, new_high = _updated_low_high(sig, today)
+    new_days = sig["days_in_status"] + 1
+    common = {
+        "last_processed_date": today_date,
+        "lowest_price": new_low,
+        "highest_price": new_high,
+    }
+
+    if sig["status"] == "pending":
+        entry_triggered = (
+            today["High"] >= sig["entry_price"] if direction == "above"
+            else today["Low"] <= sig["entry_price"]
+        )
+        stop_touched = today["Low"] <= sig["stop_loss"]
+
+        # Daily OHLC cannot reveal which level was touched first. When both
+        # entry and stop occur in one candle, count the conservative outcome
+        # as a trade and a stop, rather than excluding a potential loss as
+        # missed/sl_hit_before_entry.
+        if entry_triggered and stop_touched:
+            entry_actual = round(
+                max(float(today["Open"]), sig["entry_price"])
+                if direction == "above"
+                else min(float(today["Open"]), sig["entry_price"]),
+                2,
+            )
+            exit_price = _gap_aware_stop_price(today, sig["stop_loss"])
+            # A pullback limit can fill below the stored stop on a gap down.
+            # Do not manufacture a positive "stop" exit in that case.
+            exit_price = min(exit_price, entry_actual)
+            pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
+            return _safe_update(supabase, sig, {
+                **common,
+                "status": "sl_hit", "entry_price_actual": entry_actual,
+                "entry_date": today_date, "exit_price": exit_price,
+                "exit_date": today_date, "pnl_pct": pnl,
+                "days_in_status": 0,
+            }, context)
+
+        if stop_touched:
+            return _safe_update(supabase, sig, {
+                **common,
+                "status": "missed", "missed_reason": "sl_hit_before_entry",
+                "days_in_status": new_days,
+            }, context)
+
+        if entry_triggered:
+            entry_actual = round(
+                max(float(today["Open"]), sig["entry_price"])
+                if direction == "above"
+                else min(float(today["Open"]), sig["entry_price"]),
+                2,
+            )
+            return _safe_update(supabase, sig, {
+                **common,
+                "status": "entered", "entry_price_actual": entry_actual,
+                "entry_date": today_date, "days_in_status": 0,
+                "mark_price": round(float(today["Close"]), 2),
+            }, context)
+
+        if new_days >= ENTRY_WINDOW_DAYS:
+            return _safe_update(supabase, sig, {
+                **common,
+                "status": "missed", "missed_reason": "expired",
+                "days_in_status": new_days,
+            }, context)
+
+        return _safe_update(supabase, sig, {
+            **common,
+            "days_in_status": new_days,
+            "mark_price": round(float(today["Close"]), 2),
+        }, context)
+
+    if sig["status"] == "entered":
+        entry_actual = sig["entry_price_actual"]
+        if today["Low"] <= sig["stop_loss"]:
+            exit_price = _gap_aware_stop_price(today, sig["stop_loss"])
+            pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
+            return _safe_update(supabase, sig, {
+                **common,
+                "status": "sl_hit", "exit_price": exit_price,
+                "exit_date": today_date, "pnl_pct": pnl,
+                "days_in_status": new_days,
+            }, context)
+
+        if today["High"] >= sig["take_profit"]:
+            exit_price = sig["take_profit"]
+            pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
+            return _safe_update(supabase, sig, {
+                **common,
+                "status": "tp_hit", "exit_price": exit_price,
+                "exit_date": today_date, "pnl_pct": pnl,
+                "days_in_status": new_days,
+            }, context)
+
+        if new_days >= HOLDING_PERIOD_DAYS:
+            exit_price = round(float(today["Close"]), 2)
+            pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
+            return _safe_update(supabase, sig, {
+                **common,
+                "status": "closed_timeout", "exit_price": exit_price,
+                "exit_date": today_date, "pnl_pct": pnl,
+                "days_in_status": new_days,
+            }, context)
+
+        return _safe_update(supabase, sig, {
+            **common,
+            "days_in_status": new_days,
+            "mark_price": round(float(today["Close"]), 2),
+        }, context)
+
+    return True
 
 
 def update_active_signals(supabase, price_data):
@@ -136,97 +282,20 @@ def update_active_signals(supabase, price_data):
             print(f"  [signal] {ticker}/{strategy}: gagal fetch hari ini, status dibiarkan apa adanya")
             continue
 
-        df = price_data[ticker]
-        today = df.iloc[-1]
-        today_date = str(df.index[-1].date())
+        df = price_data[ticker].sort_index()
+        last_processed = sig.get("last_processed_date") or sig["signal_date"]
+        unseen = _bars_after(df, last_processed)
 
-        if today_date == sig["signal_date"]:
-            continue  # sinyal baru dibuat hari ini, entry window mulai besok
-
-        new_low, new_high = _updated_low_high(sig, today)
-        new_days = sig["days_in_status"] + 1
-
-        if sig["status"] == "pending":
-            if today["Low"] <= sig["stop_loss"]:
-                ok = _safe_update(supabase, sig, {
-                    "status": "missed", "missed_reason": "sl_hit_before_entry",
-                    "days_in_status": new_days,
-                    "lowest_price": new_low, "highest_price": new_high,
-                }, context)
-                if not ok: fail_count += 1
-                continue
-
-            entry_triggered = (
-                today["High"] >= sig["entry_price"] if direction == "above"
-                else today["Low"] <= sig["entry_price"]
+        for bar_date, today in unseen.iterrows():
+            today_date = str(bar_date.date())
+            ok = _process_signal_bar(
+                supabase, sig, today, today_date, direction, context
             )
-
-            if entry_triggered:
-                if direction == "above":
-                    entry_actual = round(max(float(today["Open"]), sig["entry_price"]), 2)
-                else:
-                    entry_actual = round(min(float(today["Open"]), sig["entry_price"]), 2)
-                ok = _safe_update(supabase, sig, {
-                    "status": "entered", "entry_price_actual": entry_actual,
-                    "entry_date": today_date, "days_in_status": 0,
-                    "mark_price": round(float(today["Close"]), 2),
-                    "lowest_price": new_low, "highest_price": new_high,
-                }, context)
-                if not ok: fail_count += 1
-            else:
-                if new_days >= ENTRY_WINDOW_DAYS:
-                    ok = _safe_update(supabase, sig, {
-                        "status": "missed", "missed_reason": "expired",
-                        "days_in_status": new_days,
-                        "lowest_price": new_low, "highest_price": new_high,
-                    }, context)
-                else:
-                    ok = _safe_update(supabase, sig, {
-                        "days_in_status": new_days,
-                        "mark_price": round(float(today["Close"]), 2),
-                        "lowest_price": new_low, "highest_price": new_high,
-                    }, context)
-                if not ok: fail_count += 1
-
-        elif sig["status"] == "entered":
-            entry_actual = sig["entry_price_actual"]
-            if today["Low"] <= sig["stop_loss"]:
-                exit_price = sig["stop_loss"]
-                pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
-                ok = _safe_update(supabase, sig, {
-                    "status": "sl_hit", "exit_price": exit_price,
-                    "exit_date": today_date, "pnl_pct": pnl,
-                    "days_in_status": new_days,
-                    "lowest_price": new_low, "highest_price": new_high,
-                }, context)
-                if not ok: fail_count += 1
-            elif today["High"] >= sig["take_profit"]:
-                exit_price = sig["take_profit"]
-                pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
-                ok = _safe_update(supabase, sig, {
-                    "status": "tp_hit", "exit_price": exit_price,
-                    "exit_date": today_date, "pnl_pct": pnl,
-                    "days_in_status": new_days,
-                    "lowest_price": new_low, "highest_price": new_high,
-                }, context)
-                if not ok: fail_count += 1
-            else:
-                if new_days >= HOLDING_PERIOD_DAYS:
-                    exit_price = round(float(today["Close"]), 2)
-                    pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
-                    ok = _safe_update(supabase, sig, {
-                        "status": "closed_timeout", "exit_price": exit_price,
-                        "exit_date": today_date, "pnl_pct": pnl,
-                        "days_in_status": new_days,
-                        "lowest_price": new_low, "highest_price": new_high,
-                    }, context)
-                else:
-                    ok = _safe_update(supabase, sig, {
-                        "days_in_status": new_days,
-                        "mark_price": round(float(today["Close"]), 2),
-                        "lowest_price": new_low, "highest_price": new_high,
-                    }, context)
-                if not ok: fail_count += 1
+            if not ok:
+                fail_count += 1
+                break
+            if sig["status"] not in ("pending", "entered"):
+                break
 
     if fail_count:
         print(f"  [signal] WARNING: {fail_count} update trade_signals gagal hari ini "
@@ -276,6 +345,7 @@ def generate_new_signals(supabase, price_data, strategy_rows, tickers_with_activ
             "take_profit": take_profit,
             "status": "pending",
             "days_in_status": 0,
+            "last_processed_date": r["date"],
             "mark_price": round(float(today["Close"]), 2),
             "lowest_price": round(float(today["Low"]), 2),
             "highest_price": round(float(today["High"]), 2),

@@ -656,7 +656,7 @@
   const CELL_RENDERERS = {
     signal_date: s => `<td class="mono">${escapeHtml(s.signal_date)}</td>`,
     ticker: s => `<td class="symbol">${escapeHtml(s.ticker)}</td>`,
-    strategy: s => `<td>${strategyBadge(s.strategy)}</td>`,
+    strategy: s => `<td>${strategyBadge(s.strategy, s.snapshot_tier)}</td>`,
     entry_price: s => `<td class="mono">${fmt(s.entry_price)}</td>`,
     entry_price_actual: s => `<td>${entryStatusBadge(s)}</td>`,
     stop_loss: s => `<td class="mono neg">${fmt(s.stop_loss)}</td>`,
@@ -773,13 +773,22 @@
     return `<span class="badge badge-${cls}">${label}</span>`;
   }
 
-  function strategyBadge(strategy){
+  function strategyBadge(strategy, tier){
     const label = strategy === "breakout" ? "BREAKOUT" : strategy === "pullback" ? "PULLBACK" : strategy.toUpperCase();
     const color = strategy === "breakout" ? "var(--blue)" : "var(--purple)";
     const warn = strategy === "breakout"
       ? `<span title="Profit factor jatuh di bawah breakeven (0.93) setelah top-10 ticker outlier dibuang & setelah simulasi slippage 0.50% -- lihat catatan audit robustness. Sedang masa observasi live 3 bulan." style="color:var(--red);cursor:help;margin-left:3px;">&#9888;</span>`
       : "";
-    return `<span class="mono" style="font-size:10.5px;color:${color};">${label}</span>${warn}`;
+    let tierTag = "";
+    if(strategy === "pullback" && (tier === "kuat-dalam" || tier === "kuat-dangkal")){
+      const tierColor = tier === "kuat-dalam" ? "var(--green)" : "var(--text-dim)";
+      const tierText = tier === "kuat-dalam" ? "DALAM" : "DANGKAL";
+      const tierTitle = tier === "kuat-dalam"
+        ? "dist_ma20_pct rendah saat sinyal -- edge confirmed, robust di bull regime (PF lebih tinggi dari kuat-dangkal)"
+        : "dist_ma20_pct tidak rendah saat sinyal -- tetap actionable, tapi PF lebih rendah dari kuat-dalam";
+      tierTag = ` <span class="mono" title="${tierTitle}" style="font-size:9px;font-weight:700;color:${tierColor};cursor:help;">${tierText}</span>`;
+    }
+    return `<span class="mono" style="font-size:10.5px;color:${color};">${label}</span>${tierTag}${warn}`;
   }
 
   // ============================================
@@ -1265,7 +1274,7 @@
       return `
         <tr onclick="openModal(${origIdx})">
           <td class="symbol">${escapeHtml(r.ticker)}</td>
-          <td>${strategyBadge(r.strategy)}</td>
+          <td>${strategyBadge(r.strategy, tier)}</td>
           <td class="mono">${r.score}</td>
           <td><span class="badge badge-${tier}">${tierLabel(tier)}</span></td>
           <td class="mono">${fmt(r.close)}</td>
@@ -1522,8 +1531,16 @@
 </html>
 <!--
 CHANGELOG (versi terakhir saja, tanpa tanggal -- Claude nggak reliable soal waktu real-time)
-v3.10
-- Kolom Exit di tab Riwayat: hapus label "TP @"/"SL @", tinggal angka
-  harga exit-nya aja (kolom Outcome di sebelahnya udah nunjukkin
-  TP/SL/Timeout, jadi label ini cuma dobel info).
+v3.12
+- strategyBadge() sekarang terima param tier: kolom Strategi di tabel
+  Posisi Aktif & Riwayat (sebelumnya cuma tampil di tab Screening) ikut
+  nampilin sub-label kecil "DALAM"/"DANGKAL" di sebelah label PULLBACK,
+  warna beda (hijau vs abu-abu dim) + tooltip penjelasan. Dipanggil pakai
+  snapshot_tier dari trade_signals_full_v (sudah ke-fetch dari awal via
+  select=*, cuma belum dipakai).
+- (v3.11) Sub-tier baru khusus pullback: "kuat-dalam"/"kuat-dangkal" (dari
+  kriteria dist_ma20_pct, cuma aktif saat market_regime="bull" -- di luar
+  itu tetap label "kuat" polos). Badge CSS baru, fix filter tab/stat card
+  "Kuat" (exact-match -> startsWith), tierLabel(), field Market Regime di
+  modal, teks penjelasan tab Snapshot.
 -->

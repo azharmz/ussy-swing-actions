@@ -2,10 +2,13 @@
 Strategy: breakout. Baca feature abstraction (dict dari feature_engine),
 tidak menghitung indikator mentah sendiri.
 
-Batasan tier dari backtest signal-lifecycle breakdown per score (197 ticker, 3 tahun):
-score=100 (semua 4 syarat) -> WR 59.8%, PF 1.85, median pnl +2.43%
-score 80-85 (3 dari 4 syarat) -> median pnl NEGATIF meski PF agregat >1 (ketutup
-rata-rata, bukan median) -> diturunkan ke watchlist, bukan actionable.
+Angka docstring lama (WR 59.8%, PF 1.85) berasal dari iterasi strategi yang
+sudah stale. Rekonstruksi lifecycle 2018-2026 yang tervalidasi ke data live
+memberi WR 53.7%, PF agregat 1.39, dan PF ex-top10 1.29 (n=1.279). Edge sangat
+terkonsentrasi dan rapuh; strategi dipertahankan apa adanya untuk observasi.
+
+Score 80-85 tetap watchlist, bukan actionable. Hanya score=100 yang dibuatkan
+sinyal oleh signal_engine.
 """
 TIER_ACTIONABLE = 100
 TIER_WATCHLIST = 40
