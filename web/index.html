@@ -692,8 +692,8 @@
     outcome_label: s => `<td>${outcomeBadge(s)}</td>`,
     days_in_status: s => `<td class="mono">${s.days_in_status ?? 0}d</td>`,
     mark_exit_price: s => `<td class="mono">${markExitDisplay(s)}</td>`,
-    mfe_pct: s => `<td class="mono pos">${s.mfe_pct == null ? "â€”" : fmt(s.mfe_pct) + "%"}</td>`,
-    mae_pct: s => `<td class="mono neg">${s.mae_pct == null ? "â€”" : fmt(s.mae_pct) + "%"}</td>`,
+    mfe_pct: s => `<td class="mono pos">${s.mfe_pct == null ? "&mdash;" : fmt(s.mfe_pct) + "%"}</td>`,
+    mae_pct: s => `<td class="mono neg">${s.mae_pct == null ? "&mdash;" : fmt(s.mae_pct) + "%"}</td>`,
     pnl_display: s => {
       const p = pnlDisplayFor(s);
       return `<td class="mono ${p.cls}">${p.text}</td>`;
@@ -1377,8 +1377,8 @@
     html += fieldHtml("Take Profit", fmt(s.take_profit));
     html += fieldHtml("Low / High selama jalan", `${fmt(s.lowest_price)} / ${fmt(s.highest_price)}`);
     html += fieldHtml("Mark / Exit", markExitDisplay(s));
-    html += fieldHtml("MFE sejak Entry", s.mfe_pct == null ? "â€”" : fmt(s.mfe_pct) + "%");
-    html += fieldHtml("MAE sejak Entry", s.mae_pct == null ? "â€”" : fmt(s.mae_pct) + "%");
+    html += fieldHtml("MFE sejak Entry", s.mfe_pct == null ? "&mdash;" : fmt(s.mfe_pct) + "%");
+    html += fieldHtml("MAE sejak Entry", s.mae_pct == null ? "&mdash;" : fmt(s.mae_pct) + "%");
     html += fieldHtml("PnL", pnlDisplay.text);
     html += fieldHtml(s.status === "pending" || s.status === "entered" ? "Hari Berjalan" : "Hari Ditahan",
       (s.days_in_status ?? 0) + "d (trading day)");
