@@ -167,6 +167,67 @@ def _updated_mfe_mae(sig, today, entry_actual, initialize=False):
     return round(mfe, 2), round(mae, 2)
 
 
+def _excursions_from_frame(df, entry_date, exit_date, entry_actual):
+    """Reconstruct MFE/MAE from entry through exit/latest available bar."""
+    if not entry_date or entry_actual is None or float(entry_actual) <= 0:
+        return None
+    start = pd.Timestamp(entry_date).date()
+    end = pd.Timestamp(exit_date).date() if exit_date else None
+    dates = df.index.date
+    mask = dates >= start
+    if end is not None:
+        mask &= dates <= end
+    window = df.loc[mask]
+    if window.empty or window[["High", "Low"]].isna().any().any():
+        return None
+    entry = float(entry_actual)
+    mfe = round(max(0.0, (float(window["High"].max()) - entry) / entry * 100), 2)
+    mae = round(min(0.0, (float(window["Low"].min()) - entry) / entry * 100), 2)
+    return mfe, mae
+
+
+def backfill_missing_excursions(supabase, price_data):
+    """One-time/lazy backfill using OHLC already fetched by the daily run.
+
+    No additional market-data request is made. Trades outside the available
+    one-year price window or tickers no longer in the universe remain NULL and
+    can later be filled from the long-history R2 archive.
+    """
+    try:
+        rows = supabase.table("trade_signals").select(
+            "id,ticker,strategy,entry_date,exit_date,entry_price_actual,mfe_pct,mae_pct"
+        ).execute().data
+    except Exception as e:
+        print(f"  [signal] Backfill MFE/MAE dilewati (kolom belum tersedia?): {e}")
+        return 0
+
+    candidates = [
+        row for row in rows
+        if row.get("entry_date") and row.get("entry_price_actual") is not None
+        and (row.get("mfe_pct") is None or row.get("mae_pct") is None)
+    ]
+    updated = 0
+    unavailable = 0
+    for sig in candidates:
+        df = price_data.get(sig["ticker"])
+        excursion = None if df is None else _excursions_from_frame(
+            df.sort_index(), sig["entry_date"], sig.get("exit_date"),
+            sig["entry_price_actual"],
+        )
+        if excursion is None:
+            unavailable += 1
+            continue
+        mfe, mae = excursion
+        context = f"{sig['ticker']}/{sig['strategy']}/backfill-excursion"
+        if _safe_update(supabase, sig, {"mfe_pct": mfe, "mae_pct": mae}, context):
+            updated += 1
+
+    if candidates:
+        print(f"  [signal] Backfill MFE/MAE: {updated}/{len(candidates)} trade terisi; "
+              f"{unavailable} belum punya OHLC lengkap di window 1 tahun.")
+    return updated
+
+
 def _process_signal_bar(supabase, sig, today, today_date, direction, context):
     """Process exactly one previously unseen OHLC bar.
 
@@ -418,6 +479,7 @@ def generate_new_signals(supabase, price_data, strategy_rows, tickers_with_activ
 
 
 def process_signals(supabase, price_data, strategy_rows):
+    backfill_missing_excursions(supabase, price_data)
     tickers_with_active = update_active_signals(supabase, price_data)
     new_signals = generate_new_signals(supabase, price_data, strategy_rows, tickers_with_active)
 

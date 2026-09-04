@@ -6,6 +6,7 @@ from signal_engine import (
     _bars_after,
     _gap_aware_stop_price,
     _process_signal_bar,
+    _excursions_from_frame,
     _updated_mfe_mae,
 )
 
@@ -124,6 +125,32 @@ class SignalLifecycleTests(unittest.TestCase):
                 100,
             ),
             (None, None),
+        )
+
+    def test_historical_excursions_respect_entry_and_exit_dates(self):
+        frame = pd.DataFrame(
+            {
+                "High": [150, 103, 110, 160],
+                "Low": [50, 98, 95, 40],
+            },
+            index=pd.to_datetime([
+                "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-24"
+            ]),
+        )
+        # Extreme bars before entry and after exit must not contaminate result.
+        self.assertEqual(
+            _excursions_from_frame(frame, "2026-08-20", "2026-08-21", 100),
+            (10.0, -5.0),
+        )
+
+    def test_historical_excursions_use_latest_bar_for_open_trade(self):
+        frame = pd.DataFrame(
+            {"High": [101, 106], "Low": [99, 97]},
+            index=pd.to_datetime(["2026-08-20", "2026-08-21"]),
+        )
+        self.assertEqual(
+            _excursions_from_frame(frame, "2026-08-20", None, 100),
+            (6.0, -3.0),
         )
 
 
