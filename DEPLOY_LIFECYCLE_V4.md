@@ -8,12 +8,16 @@ idempotent/replayable dan simulasi stop lebih konservatif.
 
 1. Jalankan isi `supabase/migrations/20260831_add_last_processed_date.sql`
    pada Supabase SQL Editor.
-2. Commit dan push seluruh perubahan repo melalui GitHub Desktop.
-3. Jalankan workflow `Daily US Swing Screener` dengan `workflow_dispatch`.
-4. Pastikan step `Run lifecycle unit tests` lulus sebelum step screener.
+2. Jalankan isi `supabase/migrations/20260904_add_mfe_mae.sql` pada Supabase
+   SQL Editor.
+3. Commit dan push seluruh perubahan repo melalui GitHub Desktop.
+4. Jalankan workflow `Daily US Swing Screener` dengan `workflow_dispatch`.
+5. Pastikan step `Run lifecycle unit tests` lulus sebelum step screener.
 
 Jangan membalik langkah 1 dan 2. Kode v4 mengirim kolom
 `last_processed_date`; run akan gagal bila migration belum diterapkan.
+Kode v5 juga mengirim `mfe_pct` dan `mae_pct`, sehingga migration kedua wajib
+diterapkan sebelum workflow yang berisi kode v5 dijalankan.
 
 ## Perilaku baru
 
@@ -36,4 +40,3 @@ from public.trade_signals
 where status in ('pending', 'entered')
   and last_processed_date is null;
 ```
-

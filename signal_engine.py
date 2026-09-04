@@ -24,7 +24,8 @@ keras oleh partial unique index di database
 
 mark_price, lowest_price, highest_price di-update tiap hari selama status
 pending/entered -- mark_price buat floating PnL di frontend, lowest/highest
-buat lihat seberapa jauh harga sempat bergerak selama sinyal dipantau.
+buat rentang seluruh masa sinyal. MFE/MAE terpisah dan baru dimulai saat entry,
+supaya pergerakan ketika masih pending tidak mencemari excursion trade.
 
 CATATAN (v2): tiap panggilan .update().execute() sekarang dibungkus
 try/except + logging eksplisit (ticker, strategi, id, error asli). Ini
@@ -51,6 +52,11 @@ sama sekarang idempotent, dan kalau job harian gagal maka semua candle yang
 terlewat diproses berurutan pada run berikutnya. Candle pending yang menyentuh
 entry+SL sekaligus dihitung konservatif sebagai trade sl_hit (bukan dikeluarkan
 dari performa sebagai missed), dan stop yang di-gap memakai min(Open, stop).
+
+CATATAN (v5): mfe_pct/mae_pct menyimpan maximum favorable/adverse excursion
+sejak entry. Karena data hanya OHLC harian, candle entry memakai seluruh rentang
+High/Low candle tersebut (urutan intraday tidak tersedia); hasil dijepit terhadap
+entry supaya MFE tidak negatif dan MAE tidak positif.
 """
 import pandas as pd
 
@@ -141,6 +147,26 @@ def _gap_aware_stop_price(today, stop_loss):
     return round(min(float(today["Open"]), float(stop_loss)), 2)
 
 
+def _updated_mfe_mae(sig, today, entry_actual, initialize=False):
+    """Update percentage excursions relative to the actual fill price."""
+    high_pct = (float(today["High"]) - float(entry_actual)) / float(entry_actual) * 100
+    low_pct = (float(today["Low"]) - float(entry_actual)) / float(entry_actual) * 100
+    high_pct = round(max(0.0, high_pct), 2)
+    low_pct = round(min(0.0, low_pct), 2)
+
+    prev_mfe = None if initialize else sig.get("mfe_pct")
+    prev_mae = None if initialize else sig.get("mae_pct")
+    # Legacy trades entered before v5 cannot be reconstructed correctly from
+    # lowest/highest_price because those fields include the pending window.
+    # Keep them NULL permanently instead of presenting partial data as if it
+    # covered the full trade.
+    if not initialize and (prev_mfe is None or prev_mae is None):
+        return None, None
+    mfe = high_pct if prev_mfe is None else max(float(prev_mfe), high_pct)
+    mae = low_pct if prev_mae is None else min(float(prev_mae), low_pct)
+    return round(mfe, 2), round(mae, 2)
+
+
 def _process_signal_bar(supabase, sig, today, today_date, direction, context):
     """Process exactly one previously unseen OHLC bar.
 
@@ -178,11 +204,13 @@ def _process_signal_bar(supabase, sig, today, today_date, direction, context):
             # Do not manufacture a positive "stop" exit in that case.
             exit_price = min(exit_price, entry_actual)
             pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
+            mfe, mae = _updated_mfe_mae(sig, today, entry_actual, initialize=True)
             return _safe_update(supabase, sig, {
                 **common,
                 "status": "sl_hit", "entry_price_actual": entry_actual,
                 "entry_date": today_date, "exit_price": exit_price,
                 "exit_date": today_date, "pnl_pct": pnl,
+                "mfe_pct": mfe, "mae_pct": mae,
                 "days_in_status": 0,
             }, context)
 
@@ -200,11 +228,13 @@ def _process_signal_bar(supabase, sig, today, today_date, direction, context):
                 else min(float(today["Open"]), sig["entry_price"]),
                 2,
             )
+            mfe, mae = _updated_mfe_mae(sig, today, entry_actual, initialize=True)
             return _safe_update(supabase, sig, {
                 **common,
                 "status": "entered", "entry_price_actual": entry_actual,
                 "entry_date": today_date, "days_in_status": 0,
                 "mark_price": round(float(today["Close"]), 2),
+                "mfe_pct": mfe, "mae_pct": mae,
             }, context)
 
         if new_days >= ENTRY_WINDOW_DAYS:
@@ -222,6 +252,8 @@ def _process_signal_bar(supabase, sig, today, today_date, direction, context):
 
     if sig["status"] == "entered":
         entry_actual = sig["entry_price_actual"]
+        mfe, mae = _updated_mfe_mae(sig, today, entry_actual)
+        excursion = {} if mfe is None or mae is None else {"mfe_pct": mfe, "mae_pct": mae}
         if today["Low"] <= sig["stop_loss"]:
             exit_price = _gap_aware_stop_price(today, sig["stop_loss"])
             pnl = round((exit_price - entry_actual) / entry_actual * 100, 2)
@@ -229,6 +261,7 @@ def _process_signal_bar(supabase, sig, today, today_date, direction, context):
                 **common,
                 "status": "sl_hit", "exit_price": exit_price,
                 "exit_date": today_date, "pnl_pct": pnl,
+                **excursion,
                 "days_in_status": new_days,
             }, context)
 
@@ -239,6 +272,7 @@ def _process_signal_bar(supabase, sig, today, today_date, direction, context):
                 **common,
                 "status": "tp_hit", "exit_price": exit_price,
                 "exit_date": today_date, "pnl_pct": pnl,
+                **excursion,
                 "days_in_status": new_days,
             }, context)
 
@@ -249,6 +283,7 @@ def _process_signal_bar(supabase, sig, today, today_date, direction, context):
                 **common,
                 "status": "closed_timeout", "exit_price": exit_price,
                 "exit_date": today_date, "pnl_pct": pnl,
+                **excursion,
                 "days_in_status": new_days,
             }, context)
 
@@ -256,6 +291,7 @@ def _process_signal_bar(supabase, sig, today, today_date, direction, context):
             **common,
             "days_in_status": new_days,
             "mark_price": round(float(today["Close"]), 2),
+            **excursion,
         }, context)
 
     return True
@@ -349,6 +385,8 @@ def generate_new_signals(supabase, price_data, strategy_rows, tickers_with_activ
             "mark_price": round(float(today["Close"]), 2),
             "lowest_price": round(float(today["Low"]), 2),
             "highest_price": round(float(today["High"]), 2),
+            "mfe_pct": None,
+            "mae_pct": None,
         }
 
         # Validasi NaN sebelum masuk batch upsert -- sinyal baru yang datanya

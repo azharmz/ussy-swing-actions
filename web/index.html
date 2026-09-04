@@ -442,6 +442,28 @@
     return { data, total: isNaN(total) ? data.length : total };
   }
 
+  async function attachTradeExcursions(data){
+    const ids = [...new Set(data.map(r => String(r.id ?? "")).filter(id => /^\d+$/.test(id)))];
+    if(!ids.length) return data;
+    try{
+      const excursionRows = [];
+      // Keep URLs short for CSV exports containing many trades.
+      for(let i = 0; i < ids.length; i += 100){
+        const batch = ids.slice(i, i + 100);
+        excursionRows.push(...await sbFetch(
+          `trade_signal_excursions_v?select=id,mfe_pct,mae_pct&id=in.(${batch.join(",")})`
+        ));
+      }
+      const byId = Object.fromEntries(excursionRows.map(r => [String(r.id), r]));
+      return data.map(r => ({ ...r, ...(byId[String(r.id)] || {}) }));
+    }catch(e){
+      // Migration may not be live yet. Keep the rest of the table usable and
+      // show an em dash for excursion fields instead of breaking the page.
+      console.warn("MFE/MAE belum bisa dimuat:", e.message);
+      return data;
+    }
+  }
+
   async function loadSignalsPage(){
     const st = curTab();
     const offset = (st.page - 1) * PAGE_SIZE;
@@ -471,11 +493,11 @@
       const { data, total } = await sbFetchWithCount(
         `trade_signals_full_v?select=*&order=${orderParam}&limit=${PAGE_SIZE}&offset=${offset}${queryParams}`
       );
-      signalRows = data;
+      signalRows = await attachTradeExcursions(data);
       st.totalCount = total;
       renderSignals();
       renderPagination();
-      if(isDefaultView) cacheSet(cacheKey, { rows: data, total });
+      if(isDefaultView) cacheSet(cacheKey, { rows: signalRows, total });
     }catch(e){
       console.warn("trade_signals belum bisa dimuat:", e.message);
       // Kalau fetch gagal tapi cache masih nampil (sudah di-render di atas),
@@ -632,7 +654,9 @@
     ["entry_price", "Trigger"], ["entry_price_actual", "Entry"],
     ["stop_loss", "Stop Loss"], ["take_profit", "Take Profit"],
     ["days_in_status", "Hari Berjalan"],
-    ["mark_exit_price", "Mark"], ["pnl_display", "Floating PnL"],
+    ["mark_exit_price", "Mark"],
+    ["mfe_pct", "MFE", false], ["mae_pct", "MAE", false],
+    ["pnl_display", "Floating PnL"],
   ];
   // Riwayat (tp_hit/sl_hit/closed_timeout/missed): cuma kolom penting --
   // detail lengkap tetap ada di modal per baris.
@@ -641,7 +665,9 @@
     ["entry_price_actual", "Entry"],
     ["outcome_label", "Outcome"],
     ["days_in_status", "Hari Ditahan"],
-    ["mark_exit_price", "Exit"], ["pnl_display", "Realized PnL"],
+    ["mark_exit_price", "Exit"],
+    ["mfe_pct", "MFE", false], ["mae_pct", "MAE", false],
+    ["pnl_display", "Realized PnL"],
   ];
   const STATUS_OPTIONS_RIWAYAT = [
     ["resolved_only", "Semua (kecuali Expired/SL Duluan)"],
@@ -666,6 +692,8 @@
     outcome_label: s => `<td>${outcomeBadge(s)}</td>`,
     days_in_status: s => `<td class="mono">${s.days_in_status ?? 0}d</td>`,
     mark_exit_price: s => `<td class="mono">${markExitDisplay(s)}</td>`,
+    mfe_pct: s => `<td class="mono pos">${s.mfe_pct == null ? "â€”" : fmt(s.mfe_pct) + "%"}</td>`,
+    mae_pct: s => `<td class="mono neg">${s.mae_pct == null ? "â€”" : fmt(s.mae_pct) + "%"}</td>`,
     pnl_display: s => {
       const p = pnlDisplayFor(s);
       return `<td class="mono ${p.cls}">${p.text}</td>`;
@@ -687,8 +715,9 @@
   }
 
   function renderSignalsHeader(){
-    document.getElementById("signalsHeadRow").innerHTML = activeHeadCols().map(([key, label]) => {
+    document.getElementById("signalsHeadRow").innerHTML = activeHeadCols().map(([key, label, sortable = true]) => {
       if(key === null) return `<th>${label}</th>`;
+      if(!sortable) return `<th title="Excursion sejak entry aktual">${label}</th>`;
       return `<th style="cursor:pointer;user-select:none" onclick="sortTable('${key}')" title="Klik untuk urutkan">${label}${sortArrow(key)}</th>`;
     }).join("");
   }
@@ -1348,6 +1377,8 @@
     html += fieldHtml("Take Profit", fmt(s.take_profit));
     html += fieldHtml("Low / High selama jalan", `${fmt(s.lowest_price)} / ${fmt(s.highest_price)}`);
     html += fieldHtml("Mark / Exit", markExitDisplay(s));
+    html += fieldHtml("MFE sejak Entry", s.mfe_pct == null ? "â€”" : fmt(s.mfe_pct) + "%");
+    html += fieldHtml("MAE sejak Entry", s.mae_pct == null ? "â€”" : fmt(s.mae_pct) + "%");
     html += fieldHtml("PnL", pnlDisplay.text);
     html += fieldHtml(s.status === "pending" || s.status === "entered" ? "Hari Berjalan" : "Hari Ditahan",
       (s.days_in_status ?? 0) + "d (trading day)");
@@ -1401,6 +1432,7 @@
       data = await sbFetch(
         `trade_signals_full_v?select=*&order=signal_date.desc,id.desc&limit=2000${buildTradesFilterParams()}`
       );
+      data = await attachTradeExcursions(data);
     }catch(e){
       alert("Gagal ambil data buat CSV: " + e.message);
       return;
@@ -1408,7 +1440,7 @@
     if(!data.length){ alert("Tidak ada data buat di-export."); return; }
 
     const cols = ["signal_date","ticker","strategy","entry_price","entry_price_actual","entry_date",
-                  "stop_loss","take_profit","lowest_price","highest_price","status","missed_reason",
+                  "stop_loss","take_profit","lowest_price","highest_price","mfe_pct","mae_pct","status","missed_reason",
                   "mark_price","exit_price","exit_date","pnl_pct","floating_pnl_pct",
                   "snapshot_score","snapshot_tier","snapshot_close","snapshot_rsi14","snapshot_atr14_pct",
                   "snapshot_dist_ma20_pct","snapshot_relative_volume","snapshot_rs_vs_spy","snapshot_signals"];
